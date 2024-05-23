@@ -1,0 +1,22 @@
+Initial Return Request:
+User submits a return request with details including the product, reason, and return policy.
+The status is set to "Pending".
+
+Processing Return Request:
+An employee assigns a SerialNumber to the ReturnRequest, changing the status to "Processing".
+
+Technical Review:
+A technical employee reviews the return request.
+Based on the review, the product can be marked for repair, replacement, refunded or disposal.
+Update the Process field and the Status field in the ReturnRequest table accordingly.
+
+Outcome Handling:
+Repaired: If repaired, the ProductItems status is updated to "Refurbished" and the item is returned to stock.
+Replaced: If replaced, a new product item is assigned to the user, and the original item's status is updated accordingly.
+Refunded: If refunded, a new entry is created in the RefundTransaction table. And the condition is good then 
+the ProductItems status is updated to "Refurbished" and the item is returned to stock other wise disposed
+Disposal: If the product is beyond repair, the ProductItems status is updated to "Disposal".
+
+Closing the Request:
+Once the request is resolved, the status in the ReturnRequest table is set to "Closed".
+The ClosedBy field is populated with the employee user ID who handled the closure, and ClosedDate is recorded.
