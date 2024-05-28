@@ -19,6 +19,7 @@ namespace ReturnManagementSystem.Models
         public string? Address { get; set; }
         public string? Role { get; set; }
 
+        public virtual UserDetail? UserDetail { get; set; }
         public virtual ICollection<Order> Orders { get; set; }
         public virtual ICollection<ReturnRequest> ReturnRequestClosedByNavigations { get; set; }
         public virtual ICollection<ReturnRequest> ReturnRequestUsers { get; set; }

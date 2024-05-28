@@ -1,3 +1,10 @@
+-- Drop the database if it exists
+IF EXISTS (SELECT name FROM sys.databases WHERE name = N'ReturnManagementSystem')
+BEGIN
+    DROP DATABASE ReturnManagementSystem;
+END
+GO
+
 -- Create the database
 CREATE DATABASE ReturnManagementSystem;
 GO
@@ -6,9 +13,9 @@ GO
 USE ReturnManagementSystem;
 GO
 
--- Create the tables
+-- Create the tables with IDENTITY property for primary keys
 CREATE TABLE Users (
-    Id INT PRIMARY KEY,
+    Id INT IDENTITY(1,1) PRIMARY KEY,
     Name VARCHAR(255),
     Email VARCHAR(255),
     Phone VARCHAR(20),
@@ -17,14 +24,15 @@ CREATE TABLE Users (
 );
 
 CREATE TABLE UserDetails (
-    UserId INT FOREIGN KEY REFERENCES Users(Id),
+    UserId INT PRIMARY KEY FOREIGN KEY REFERENCES Users(Id),
+    Username VARCHAR(MAX),
     Password VARBINARY(MAX),
     PasswordHashKey VARBINARY(MAX),
     Status VARCHAR(10) -- Active or Disabled
 );
 
 CREATE TABLE Products (
-    ProductId INT PRIMARY KEY,
+    ProductId INT IDENTITY(1,1) PRIMARY KEY,
     Name VARCHAR(255),
     Description VARCHAR(MAX),
     Price DECIMAL(18, 2),
@@ -33,20 +41,21 @@ CREATE TABLE Products (
 );
 
 CREATE TABLE ProductItems (
-    SerialNumber VARCHAR(50) PRIMARY KEY,
+    ProductItemId INT IDENTITY(1,1) PRIMARY KEY,
+    SerialNumber VARCHAR(50) UNIQUE,
     ProductId INT FOREIGN KEY REFERENCES Products(ProductId),
     Status VARCHAR(20) -- Available, Refurbished, Ordered
 );
 
 CREATE TABLE Policies (
-    PolicyId INT PRIMARY KEY,
+    PolicyId INT IDENTITY(1,1) PRIMARY KEY,
     ProductId INT FOREIGN KEY REFERENCES Products(ProductId),
-    Policy VARCHAR(50), -- Warranty, Return, Replacement
+    PolicyType VARCHAR(50), -- Warranty, Return, Replacement
     Duration INT -- Days for policy
 );
 
 CREATE TABLE Orders (
-    OrderId INT PRIMARY KEY,
+    OrderId INT IDENTITY(1,1) PRIMARY KEY,
     UserId INT FOREIGN KEY REFERENCES Users(Id),
     OrderDate DATETIME,
     TotalAmount DECIMAL(18, 2),
@@ -54,15 +63,15 @@ CREATE TABLE Orders (
 );
 
 CREATE TABLE OrderProducts (
+    OrderProductId INT IDENTITY(1,1) PRIMARY KEY,
     OrderId INT FOREIGN KEY REFERENCES Orders(OrderId),
     ProductId INT FOREIGN KEY REFERENCES Products(ProductId),
     Price DECIMAL(18, 2),
-    SerialNumber VARCHAR(50) FOREIGN KEY REFERENCES ProductItems(SerialNumber),
-    PRIMARY KEY (OrderId, ProductId, SerialNumber)
+    SerialNumber VARCHAR(50) FOREIGN KEY REFERENCES ProductItems(SerialNumber)
 );
 
 CREATE TABLE Payments (
-    PaymentId INT PRIMARY KEY,
+    PaymentId INT IDENTITY(1,1) PRIMARY KEY,
     OrderId INT FOREIGN KEY REFERENCES Orders(OrderId),
     PaymentDate DATETIME,
     TransactionId VARCHAR(100), -- Transaction ID from the payment gateway
@@ -70,7 +79,7 @@ CREATE TABLE Payments (
 );
 
 CREATE TABLE ReturnRequests (
-    RequestId INT PRIMARY KEY,
+    RequestId INT IDENTITY(1,1) PRIMARY KEY,
     UserId INT FOREIGN KEY REFERENCES Users(Id),
     OrderId INT FOREIGN KEY REFERENCES Orders(OrderId),
     ProductId INT FOREIGN KEY REFERENCES Products(ProductId),
@@ -86,11 +95,9 @@ CREATE TABLE ReturnRequests (
 );
 
 CREATE TABLE RefundTransactions (
-    RefundTransactionId INT PRIMARY KEY,
+    RefundTransactionId INT IDENTITY(1,1) PRIMARY KEY,
     RequestId INT FOREIGN KEY REFERENCES ReturnRequests(RequestId),
     TransactionDate DATETIME,
     TransactionAmount DECIMAL(18, 2),
     TransactionId VARCHAR(100) -- Transaction ID from the payment gateway
 );
-
-

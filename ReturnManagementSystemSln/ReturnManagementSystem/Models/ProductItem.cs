@@ -11,6 +11,7 @@ namespace ReturnManagementSystem.Models
             ReturnRequests = new HashSet<ReturnRequest>();
         }
 
+        public int ProductItemId { get; set; }
         public string SerialNumber { get; set; } = null!;
         public int? ProductId { get; set; }
         public string? Status { get; set; }

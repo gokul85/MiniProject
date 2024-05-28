@@ -7,7 +7,7 @@ namespace ReturnManagementSystem.Models
     {
         public int PolicyId { get; set; }
         public int? ProductId { get; set; }
-        public string? Policy1 { get; set; }
+        public string? PolicyType { get; set; }
         public int? Duration { get; set; }
 
         public virtual Product? Product { get; set; }
