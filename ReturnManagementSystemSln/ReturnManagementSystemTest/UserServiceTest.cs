@@ -32,7 +32,7 @@ namespace ReturnManagementSystemTest
             Mock<IConfiguration> mockConfig = new Mock<IConfiguration>();
             mockConfig.Setup(x => x.GetSection("TokenKey")).Returns(configTokenSection.Object);
             _tokenService = new TokenService(mockConfig.Object);
-            var options = new DbContextOptionsBuilder<ReturnManagementSystemContext>().UseInMemoryDatabase("DummyDB").Options;
+            var options = new DbContextOptionsBuilder<ReturnManagementSystemContext>().UseInMemoryDatabase("DummyDB2").Options;
             context = new ReturnManagementSystemContext(options);
             _userRepository = new UserRepository(context);
             _userdetailsRepository = new UserDetailRepository(context);
@@ -48,25 +48,131 @@ namespace ReturnManagementSystemTest
                 Phone = "9876543210",
                 Email = "test@gmail.com",
                 Address = "Address",
-                Username = "test",
+                Username = "testuser",
                 Password = "Test@123"
             };
 
             var user = await _userService.Register(registerUserDTO);
 
             Assert.IsNotNull(user);
+            Assert.That(user.Username, Is.EqualTo("testuser"));
         }
 
         [Test]
-        public async Task UserLoginFailTest()
+        public async Task RegisterUserTestUsernameExists()
         {
-            UserLoginDTO userLoginDTO = new UserLoginDTO()
+            var registerUserDTO = new RegisterUserDTO
             {
-                UserId = 1,
+                Name = "Test User",
+                Phone = "9876543210",
+                Email = "test@gmail.com",
+                Address = "Test Address",
+                Username = "testuser",
                 Password = "Test@123"
             };
 
-            Assert.ThrowsAsync<UnauthorizedUserException>(async ()=> await _userService.Login(userLoginDTO));
+            Assert.ThrowsAsync<UsernameAlreadyExistException>(async () => await _userService.Register(registerUserDTO));
         }
+
+        [Test]
+        public async Task RegisterUserTestEmailExists()
+        {
+            var registerUserDTO1 = new RegisterUserDTO
+            {
+                Name = "Test User",
+                Phone = "9876543210",
+                Email = "test2@gmail.com",
+                Address = "Test Address",
+                Username = "test",
+                Password = "Test@123"
+            };
+
+            var registerUserDTO2 = new RegisterUserDTO
+            {
+                Name = "Test User",
+                Phone = "9876543210",
+                Email = "test2@gmail.com",
+                Address = "Test Address",
+                Username = "test2",
+                Password = "Test@123"
+            };
+            await _userService.Register(registerUserDTO1);
+
+            Assert.ThrowsAsync<UserAlreadyExistException>(async () => await _userService.Register(registerUserDTO2));
+        }
+
+        [Test]
+        public async Task UserLoginInactiveUser()
+        {
+            UserLoginDTO userLoginDTO = new UserLoginDTO()
+            {
+                Username = "test",
+                Password = "Test@123"
+            };
+
+
+            Assert.ThrowsAsync<UserNotActiveException>(async () => await _userService.Login(userLoginDTO));
+        }
+
+        [TestCase("test2","pass")]
+        [TestCase("test","pass")]
+        public async Task UserLoginTestFail(string uname, string pass)
+        {
+            var userLoginDTO = new UserLoginDTO
+            {
+                Username = uname,
+                Password = pass
+            };
+
+            Assert.ThrowsAsync<UnauthorizedUserException>(async () => await _userService.Login(userLoginDTO));
+        }
+
+        [Test]
+        public async Task AddUserUpdateStatusLoginTest()
+        {
+            var registerUserDTO = new RegisterUserDTO
+            {
+                Name = "Test User",
+                Phone = "9876543210",
+                Email = "testuser@gmail.com",
+                Address = "TestAddress",
+                Username = "usertest",
+                Password = "Test@123"
+            };
+
+            var registeredUser = await _userService.Register(registerUserDTO);
+
+            var updateUserStatusDTO = new UserUpdateStatusDTO
+            {
+                UserId = registeredUser.UserId,
+                Status = "Active"
+            };
+
+            var updateResult = await _userService.UpdateUserStatus(updateUserStatusDTO);
+            Assert.That(updateResult, Is.EqualTo("User Status Successfully Updated"));
+
+            var userLoginDTO = new UserLoginDTO
+            {
+                Username = "usertest",
+                Password = "Test@123"
+            };
+
+            var loginResult = await _userService.Login(userLoginDTO);
+            Assert.IsNotNull(loginResult);
+            Assert.That(loginResult.Username, Is.EqualTo("usertest"));
+        }
+
+        [Test]
+        public void UpdateUserStatusTestNoUserFound()
+        {
+            var updateUserStatusDTO = new UserUpdateStatusDTO
+            {
+                UserId = 999,
+                Status = "Active"
+            };
+
+            Assert.ThrowsAsync<NoUserFoundException>(async () => await _userService.UpdateUserStatus(updateUserStatusDTO));
+        }
+
     }
 }

@@ -3,10 +3,9 @@
 namespace ReturnManagementSystem.Exceptions
 {
     [Serializable]
-    public class UnauthorizedUserException : Exception
+    public class InvalidSerialNumber : Exception
     {
-
-        public UnauthorizedUserException(string? message) : base(message)
+        public InvalidSerialNumber(string? message) : base(message)
         {
         }
 

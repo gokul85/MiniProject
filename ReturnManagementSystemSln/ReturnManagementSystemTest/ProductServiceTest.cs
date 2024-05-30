@@ -5,6 +5,7 @@ using ReturnManagementSystem.Repositories;
 using ReturnManagementSystem.Services;
 using Microsoft.EntityFrameworkCore.InMemory;
 using Microsoft.EntityFrameworkCore;
+using ReturnManagementSystem.Exceptions;
 
 namespace ReturnManagementSystemTest
 {
@@ -107,6 +108,18 @@ namespace ReturnManagementSystemTest
             var product = await _productservice.UpdateProduct(1,productdto);
 
             Assert.That(product.Price, Is.EqualTo(1098));
+        }
+        [Test]
+        public async Task UpdateProductFail()
+        {
+            ProductDTO productdto = new ProductDTO()
+            {
+                Name = "Boat TWS 777",
+                Price = 1098,
+                Description = "TWS 777",
+            };
+
+            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _productservice.UpdateProduct(999, productdto));
         }
     }
 }

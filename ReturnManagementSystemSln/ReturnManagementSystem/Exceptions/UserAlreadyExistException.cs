@@ -3,12 +3,10 @@
 namespace ReturnManagementSystem.Exceptions
 {
     [Serializable]
-    public class UnauthorizedUserException : Exception
+    public class UserAlreadyExistException : Exception
     {
-
-        public UnauthorizedUserException(string? message) : base(message)
+        public UserAlreadyExistException(string? message) : base(message)
         {
         }
-
     }
 }

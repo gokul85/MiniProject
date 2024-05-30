@@ -3,12 +3,10 @@
 namespace ReturnManagementSystem.Exceptions
 {
     [Serializable]
-    public class UnauthorizedUserException : Exception
+    public class ObjectsNotFoundException : Exception
     {
-
-        public UnauthorizedUserException(string? message) : base(message)
+        public ObjectsNotFoundException(string? message) : base(message)
         {
         }
-
     }
 }

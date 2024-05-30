@@ -2,7 +2,6 @@
 using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models;
 using ReturnManagementSystem.Models.DTOs;
-using ReturnManagementSystem.Repositories;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -32,19 +31,18 @@ namespace ReturnManagementSystem.Services
         }
         public async Task<LoginReturnDTO> Login(UserLoginDTO loginDTO)
         {
-            try
+            var udb = (await _userdetailrepo.FindAll(ud => ud.Username == loginDTO.Username));
+            if(udb == null)
             {
-                var userDB = await _userdetailrepo.Get(loginDTO.UserId);
-                if (userDB == null)
-                {
-                    throw new UnauthorizedUserException("Invalid username or password");
-                }
-                HMACSHA512 hMACSHA = new HMACSHA512(userDB.PasswordHashKey);
-                var encrypterPass = hMACSHA.ComputeHash(Encoding.UTF8.GetBytes(loginDTO.Password));
-                bool isPasswordSame = ComparePassword(encrypterPass, userDB.Password);
-                if (isPasswordSame)
-                {
-                    var user = await _userrepo.Get(loginDTO.UserId);
+                throw new UnauthorizedUserException("Invalid username or password");
+            }
+            var userDB = udb.FirstOrDefault();
+            HMACSHA512 hMACSHA = new HMACSHA512(userDB.PasswordHashKey);
+            var encrypterPass = hMACSHA.ComputeHash(Encoding.UTF8.GetBytes(loginDTO.Password));
+            bool isPasswordSame = ComparePassword(encrypterPass, userDB.Password);
+            if (isPasswordSame)
+            {
+                    var user = await _userrepo.Get(userDB.UserId);
                     if (userDB.Status == "Active")
                     {
                         LoginReturnDTO loginReturnDTO = MapUserToLoginReturn(user, userDB);
@@ -52,14 +50,8 @@ namespace ReturnManagementSystem.Services
                     }
 
                     throw new UserNotActiveException("Your account is not activated");
-                }
-                throw new UnauthorizedUserException("Invalid username or password");
-            }catch
-            (Exception ex)
-            {
-                throw ex;
             }
-            
+            throw new UnauthorizedUserException("Invalid username or password");
         }
 
         public async Task<RegisterReturnDTO> Register(RegisterUserDTO userDTO)
@@ -73,7 +65,8 @@ namespace ReturnManagementSystem.Services
                 {
                     throw new UsernameAlreadyExistException("Username Already Exist");
                 }
-                var emailfound = await _userrepo.FindAll(ud => ud.Email ==  userDTO.Email);
+
+                var emailfound = await _userrepo.FindAll(u => u.Email == userDTO.Email);
                 if (emailfound != null)
                 {
                     throw new UserAlreadyExistException("User Account Already Exists, Please Login!");
@@ -81,38 +74,16 @@ namespace ReturnManagementSystem.Services
             }
             catch (Exception ex)
             {
-                if (ex is not ObjectsNotFoundExceoption)
+                if (ex is not ObjectsNotFoundException)
                     throw ex;
-                try
-                {
-                    var emailfound = await _userrepo.FindAll(u => u.Email == userDTO.Email);
-                    if (emailfound != null)
-                    {
-                        throw new UserAlreadyExistException("User Account Already Exists, Please Login!");
-                    }
-                }
-                catch(Exception exp)
-                {
-                    if(exp is not ObjectsNotFoundExceoption)
-                        throw exp;
-                }
             }
-            try
-            {
-                user = MapUserDTOToUser(userDTO);
-                userdetails = MapUserDTOToUserDetail(userDTO);
-                user = await _userrepo.Add(user);
-                userdetails.UserId = user.Id;
-                userdetails = await _userdetailrepo.Add(userdetails);
-                RegisterReturnDTO registerReturnDTO = MapRegisterReturnDTO(user, userdetails);
-                return registerReturnDTO;
-            }
-            catch (Exception) { }
-            if (user != null)
-                await RevertUserInsert(user);
-            if (userdetails != null && user == null)
-                await RevertUserDetailInsert(userdetails);
-            throw new UnableToRegisterException("Not able to register at this moment");
+            user = MapUserDTOToUser(userDTO);
+            userdetails = MapUserDTOToUserDetail(userDTO);
+            user = await _userrepo.Add(user);
+            userdetails.UserId = user.Id;
+            userdetails = await _userdetailrepo.Add(userdetails);
+            RegisterReturnDTO registerReturnDTO = MapRegisterReturnDTO(user, userdetails);
+            return registerReturnDTO;
         }
 
         private RegisterReturnDTO MapRegisterReturnDTO(User user, UserDetail userdetails)
@@ -129,13 +100,14 @@ namespace ReturnManagementSystem.Services
         public async Task<string> UpdateUserStatus(UserUpdateStatusDTO userUpdateStatusDTO)
         {
             UserDetail ud = await _userdetailrepo.Get(userUpdateStatusDTO.UserId);
-            if (ud != null)
+            if (ud == null)
             {
-                ud.Status = userUpdateStatusDTO.Status;
-                await _userdetailrepo.Update(ud);
-                return "User Status Successfully Updated";
+                throw new NoUserFoundException("No User Found");
             }
-            throw new NoUserFoundException("No User Found");
+            ud.Status = userUpdateStatusDTO.Status;
+            await _userdetailrepo.Update(ud);
+            return "User Status Successfully Updated";
+                
         }
 
         private User MapUserDTOToUser(RegisterUserDTO userDTO)
@@ -159,16 +131,6 @@ namespace ReturnManagementSystem.Services
             returnDTO.Role = user.Role ?? "User";
             returnDTO.Token = _tokenService.GenerateToken(user);
             return returnDTO;
-        }
-
-        private async Task RevertUserDetailInsert(UserDetail userdetail)
-        {
-            await _userdetailrepo.Delete(userdetail);
-        }
-
-        private async Task RevertUserInsert(User user)
-        {
-            await _userrepo.Delete(user);
         }
 
         private UserDetail MapUserDTOToUserDetail(RegisterUserDTO userDTO)

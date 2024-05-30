@@ -3,12 +3,11 @@
 namespace ReturnManagementSystem.Exceptions
 {
     [Serializable]
-    public class UnauthorizedUserException : Exception
+    public class InvalidReturnRequest : Exception
     {
 
-        public UnauthorizedUserException(string? message) : base(message)
+        public InvalidReturnRequest(string? message) : base(message)
         {
         }
-
     }
 }

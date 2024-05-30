@@ -1,0 +1,37 @@
+/addproducts
+
+{
+  "name": "Boat TWS 777",
+  "description": "Boat True Wireless 777",
+  "price": 1099,
+  "policies": [
+    {
+      "policyType": "Replacement",
+      "duration": 7
+    },
+    {
+      "policyType": "Warrenty",
+      "duration": 365
+    }
+  ],
+  "productItems": [
+    {
+      "serialNumber": "B777TWS0001"
+    },
+{
+      "serialNumber": "B777TWS0002"
+    },
+{
+      "serialNumber": "B777TWS0003"
+    },
+{
+      "serialNumber": "B777TWS0004"
+    },
+{
+      "serialNumber": "B777TWS0005"
+    },
+{
+      "serialNumber": "B777TWS0006"
+    },
+  ]
+}

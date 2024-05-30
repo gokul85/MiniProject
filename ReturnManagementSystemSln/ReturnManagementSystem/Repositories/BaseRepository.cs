@@ -1,4 +1,5 @@
-﻿using ReturnManagementSystem.Interfaces;
+﻿using ReturnManagementSystem.Exceptions;
+using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models;
 using System;
 
@@ -29,7 +30,7 @@ namespace ReturnManagementSystem.Repositories
         {
             var results = _context.Set<T>().Where(predicate).ToList();
             if (results.Count == 0)
-                throw new ObjectsNotFoundExceoption("Objects Not Found");
+                return null;
             return results;
         }
 
@@ -37,7 +38,7 @@ namespace ReturnManagementSystem.Repositories
         {
             var result = await _context.Set<T>().FindAsync(key);
             if (result == null)
-                throw new ObjectNotFoundExceoption("Object Not Found");
+                return null;
             return result;
         }
 
@@ -45,7 +46,7 @@ namespace ReturnManagementSystem.Repositories
         {
             var results = _context.Set<T>().ToList();
             if (results.Count == 0)
-                throw new ObjectsNotFoundExceoption("Objects Not Found");
+                return null;
             return results;
         }
 

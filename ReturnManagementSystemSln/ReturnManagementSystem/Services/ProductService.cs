@@ -64,7 +64,7 @@ namespace ReturnManagementSystem.Services
         public async Task<Product> UpdateProduct(int productId, ProductDTO productDTO)
         {
             var product = await _productRepository.Get(productId);
-            if (product == null) throw new ProductNotFoundException("Product not found");
+            if (product == null) throw new ObjectNotFoundException("Product not found");
 
             product.Name = productDTO.Name;
             product.Description = productDTO.Description;
