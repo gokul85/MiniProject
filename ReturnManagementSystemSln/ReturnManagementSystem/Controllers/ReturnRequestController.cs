@@ -4,12 +4,10 @@ using ReturnManagementSystem.Exceptions;
 using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models.DTOs.RRandPaymentDTOs;
 using ReturnManagementSystem.Models;
+using System.Security.Claims;
 
 namespace ReturnManagementSystem.Controllers
 {
-    /// <summary>
-    /// Controller for managing return requests.
-    /// </summary>
     [Route("api/[controller]")]
     [ApiController]
     public class ReturnRequestController : ControllerBase
@@ -29,12 +27,15 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="returnRequestDTO">Data required to open a return request.</param>
         /// <returns>The created return request.</returns>
         [HttpPost("OpenReturnRequest")]
+        [Authorize]
         [ProducesResponseType(typeof(ReturnRequest), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ReturnRequest>> OpenReturnRequest(ReturnRequestDTO returnRequestDTO)
+        public async Task<ActionResult<ReturnRequest>> OpenReturnRequest([FromBody] ReturnRequestDTO returnRequestDTO)
         {
             try
             {
+                int userid = int.Parse(User.FindFirstValue("uid"));
+                returnRequestDTO.UserId = userid;
                 var returnRequest = await _returnRequestService.OpenReturnRequest(returnRequestDTO);
                 return Ok(returnRequest);
             }
@@ -62,15 +63,15 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="process">The process to be performed.</param>
         /// <param name="feedback">Feedback regarding the return request.</param>
         /// <returns>The updated return request after technical review.</returns>
-        [HttpPost("TechnicalReview/{requestId}")]
+        [HttpPost("TechnicalReview")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ReturnRequest), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ReturnRequest>> TechnicalReview(int requestId, string process, string feedback)
+        public async Task<ActionResult<ReturnRequest>> TechnicalReview(TechnicalReviewDTO technicalReviewDTO)
         {
             try
             {
-                var returnRequest = await _returnRequestService.TechnicalReview(requestId, process, feedback);
+                var returnRequest = await _returnRequestService.TechnicalReview(technicalReviewDTO);
                 return Ok(returnRequest);
             }
             catch (ObjectNotFoundException ex)
@@ -96,15 +97,15 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="requestId">The ID of the return request.</param>
         /// <param name="serialNumber">The new serial number to be updated.</param>
         /// <returns>The updated return request after updating the serial number.</returns>
-        [HttpPut("UpdateUserSerialNumber/{requestId}")]
+        [HttpPut("UpdateUserSerialNumber")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ReturnRequest), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ReturnRequest>> UpdateUserSerialNumber(int requestId, [FromBody] string serialNumber)
+        public async Task<ActionResult<ReturnRequest>> UpdateUserSerialNumber(UpdateRequestSerialNumberDTO ursn)
         {
             try
             {
-                var returnRequest = await _returnRequestService.UpdateUserSerialNumber(requestId, serialNumber);
+                var returnRequest = await _returnRequestService.UpdateUserSerialNumber(ursn);
                 return Ok(returnRequest);
             }
             catch (ObjectNotFoundException ex)
@@ -127,19 +128,18 @@ namespace ReturnManagementSystem.Controllers
         /// <summary>
         /// Closes a return request.
         /// </summary>
-        /// <param name="requestId">The ID of the return request.</param>
-        /// <param name="userId">The ID of the user closing the return request.</param>
-        /// <param name="feedback">Feedback regarding the return request closure.</param>
+        /// <param name="closerequestDTO">Close Request DTO</param>
         /// <returns>The closed return request.</returns>
-        [HttpPut("CloseReturnRequest/{requestId}")]
+        [HttpPut("CloseReturnRequest")]
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ReturnRequest), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<ReturnRequest>> CloseReturnRequest(int requestId, int userId, [FromBody] string feedback)
+        public async Task<ActionResult<ReturnRequest>> CloseReturnRequest(CloseRequestDTO closerequestDTO)
         {
             try
             {
-                var returnRequest = await _returnRequestService.CloseReturnRequest(requestId, userId, feedback);
+                int userId = int.Parse(User.FindFirstValue("uid"));
+                var returnRequest = await _returnRequestService.CloseReturnRequest( userId, closerequestDTO);
                 return Ok(returnRequest);
             }
             catch (ObjectNotFoundException ex)
@@ -150,6 +150,89 @@ namespace ReturnManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while closing return request");
+                return StatusCode(500, new ErrorModel(500, ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Gets all active return requests.
+        /// </summary>
+        /// <returns>A list of active return requests.</returns>
+        [HttpGet("GetAllReturnRequests")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(IEnumerable<ReturnRequest>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<ReturnRequest>>> GetAllReturnRequests()
+        {
+            try
+            {
+                var returnRequests = await _returnRequestService.GetAllReturnRequests();
+                return Ok(returnRequests);
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogError(ex, "No return requests found");
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving return requests");
+                return StatusCode(500, new ErrorModel(500, ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Gets all return requests for a specific user.
+        /// </summary>
+        /// <param name="userId">The ID of the user.</param>
+        /// <returns>A list of return requests for the user.</returns>
+        [HttpGet("GetAllUserReturnRequests")]
+        [Authorize(Roles = "User,Admin")]
+        [ProducesResponseType(typeof(IEnumerable<ReturnRequest>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<ReturnRequest>>> GetAllUserReturnRequests(int userId)
+        {
+            try
+            {
+                var returnRequests = await _returnRequestService.GetAllUserReturnRequests(userId);
+                return Ok(returnRequests);
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogError(ex, "No return requests found for user");
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving return requests for user");
+                return StatusCode(500, new ErrorModel(500, ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Gets a specific return request by ID.
+        /// </summary>
+        /// <param name="requestId">The ID of the return request.</param>
+        /// <returns>The return request with the specified ID.</returns>
+        [HttpGet("GetReturnRequest")]
+        [Authorize(Roles = "User,Admin")]
+        [ProducesResponseType(typeof(ReturnRequest), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ReturnRequest>> GetReturnRequest(int requestId)
+        {
+            try
+            {
+                var returnRequest = await _returnRequestService.GetReturnRequest(requestId);
+                return Ok(returnRequest);
+            }
+            catch (ObjectNotFoundException ex)
+            {
+                _logger.LogError(ex, "Return request not found");
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving the return request");
                 return StatusCode(500, new ErrorModel(500, ex.Message));
             }
         }

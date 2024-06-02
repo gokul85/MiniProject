@@ -16,13 +16,6 @@ namespace ReturnManagementSystem.Repositories
         }
     }
 
-    public class PaymentRepository : BaseRepository<int, Payment>
-    {
-        public PaymentRepository(ReturnManagementSystemContext context) : base(context)
-        {
-        }
-    }
-
     public class PolicyRepository : BaseRepository<int, Policy>
     {
         public PolicyRepository(ReturnManagementSystemContext context) : base(context)
@@ -44,9 +37,9 @@ namespace ReturnManagementSystem.Repositories
         }
     }
 
-    public class RefundTransactionRepository : BaseRepository<int, RefundTransaction>
+    public class TransactionRepository : BaseRepository<int, Transaction>
     {
-        public RefundTransactionRepository(ReturnManagementSystemContext context) : base(context)
+        public TransactionRepository(ReturnManagementSystemContext context) : base(context)
         {
         }
     }

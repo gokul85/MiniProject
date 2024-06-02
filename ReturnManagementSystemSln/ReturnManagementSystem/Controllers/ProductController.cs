@@ -3,10 +3,11 @@ using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models.DTOs.ProductDTOs;
 using ReturnManagementSystem.Models;
 using ReturnManagementSystem.Exceptions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ReturnManagementSystem.Controllers
 {
-    [Route("/api/[controller]")]
+    [Route("api/[controller]")]
     [ApiController]
     public class ProductController : ControllerBase
     {
@@ -25,9 +26,10 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="productDTO">The product data transfer object.</param>
         /// <returns>The added product.</returns>
         [HttpPost("AddProduct")]
-        [ProducesResponseType(typeof(Product), StatusCodes.Status201Created)]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ProductReturnDTO), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<Product>> AddProduct([FromBody] ProductDTO productDTO)
+        public async Task<ActionResult<ProductReturnDTO>> AddProduct([FromBody] ProductDTO productDTO)
         {
             try
             {
@@ -48,12 +50,18 @@ namespace ReturnManagementSystem.Controllers
         [HttpGet("GetAllProducts")]
         [ProducesResponseType(typeof(List<Product>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<List<Product>>> GetAllProducts()
         {
             try
             {
                 var products = await _productService.GetAllProducts();
                 return Ok(products);
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "No products found.");
+                return NotFound(new ErrorModel(404, ex.Message));
             }
             catch (Exception ex)
             {
@@ -62,31 +70,32 @@ namespace ReturnManagementSystem.Controllers
             }
         }
 
-        // /// <summary>
-        // /// Retrieves a product by its ID.
-        // /// </summary>
-        // /// <param name="id">The product ID.</param>
-        // /// <returns>The product if found.</returns>
-        // [HttpGet("GetProductById/{id}")]
-        // [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
-        // [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
-        // public async Task<ActionResult<Product>> GetProductById(int id)
-        // {
-        //     try
-        //     {
-        //         var product = await _productService.GetByIdAsync(id);
-        //         if (product == null)
-        //         {
-        //             return NotFound(new ErrorModel(404, "Product not found"));
-        //         }
-        //         return Ok(product);
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         _logger.LogError(ex, "Get product by ID failed for ID: {ProductId}", id);
-        //         return StatusCode(500, new ErrorModel(500, ex.Message));
-        //     }
-        // }
+        /// <summary>
+        /// Retrieves a product by its ID.
+        /// </summary>
+        /// <param name="id">The product ID.</param>
+        /// <returns>The product if found.</returns>
+        [HttpGet("GetProductById")]
+        [ProducesResponseType(typeof(ProductReturnDTO), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<ProductReturnDTO>> GetProductById(int id)
+        {
+            try
+            {
+                var product = await _productService.GetProductById(id);
+                return Ok(product);
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "No product found.");
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Get product by ID failed for ID: {ProductId}", id);
+                return StatusCode(500, new ErrorModel(500, ex.Message));
+            }
+        }
 
         /// <summary>
         /// Updates an existing product.
@@ -94,11 +103,12 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="id">The product ID.</param>
         /// <param name="productDTO">The updated product data transfer object.</param>
         /// <returns>The updated product.</returns>
-        [HttpPut("UpdateProduct/{id}")]
-        [ProducesResponseType(typeof(Product), StatusCodes.Status200OK)]
+        [HttpPut("UpdateProduct")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ProductReturnDTO), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<Product>> UpdateProduct(int id, [FromBody] ProductDTO productDTO)
+        public async Task<ActionResult<ProductReturnDTO>> UpdateProduct(int id, [FromBody] ProductDTO productDTO)
         {
             try
             {

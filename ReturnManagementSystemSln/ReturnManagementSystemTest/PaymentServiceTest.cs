@@ -17,123 +17,102 @@ namespace ReturnManagementSystemTest
     {
         private PaymentService _paymentService;
         private ReturnManagementSystemContext _context;
-        private IRepository<int, Payment> _paymentRepository;
-        private IRepository<int, RefundTransaction> _refundTransactionRepository;
+        private IRepository<int, Transaction> _transactionRepository;
 
         [SetUp]
         public void SetUp()
         {
             var options = new DbContextOptionsBuilder<ReturnManagementSystemContext>()
-            .UseInMemoryDatabase(databaseName: ("ReturnManagementTestDb_" + Guid.NewGuid()))
+                .UseInMemoryDatabase(databaseName: ("ReturnManagementTestDb_" + Guid.NewGuid()))
                 .Options;
 
             _context = new ReturnManagementSystemContext(options);
-            _paymentRepository = new PaymentRepository(_context);
-            _refundTransactionRepository = new RefundTransactionRepository(_context);
-            _paymentService = new PaymentService(_paymentRepository, _refundTransactionRepository);
+            _transactionRepository = new TransactionRepository(_context);
+            _paymentService = new PaymentService(_transactionRepository);
         }
 
-
         [Test]
-        public async Task GetAllPayment_ReturnsPayments_WhenPaymentsExist()
+        public async Task GetAllTransactions_ReturnsTransactions_WhenTransactionsExist()
         {
-            var payment1 = new Payment { PaymentId = 1, OrderId = 1, PaymentDate = DateTime.UtcNow, TransactionId = "TXN123", Amount = 100 };
-            var payment2 = new Payment { PaymentId = 2, OrderId = 2, PaymentDate = DateTime.UtcNow, TransactionId = "TXN124", Amount = 200 };
-            await _paymentRepository.Add(payment1);
-            await _paymentRepository.Add(payment2);
+            var transaction1 = new Transaction { TransactionId = 1, OrderId = 1, TransactionDate = DateTime.UtcNow, PaymentGatewayTransactionId = "TXN123", TransactionAmount = 100, TransactionType = "Payment" };
+            var transaction2 = new Transaction { TransactionId = 2, OrderId = 2, TransactionDate = DateTime.UtcNow, PaymentGatewayTransactionId = "TXN124", TransactionAmount = 200, TransactionType = "Payment" };
+            await _transactionRepository.Add(transaction1);
+            await _transactionRepository.Add(transaction2);
 
-            var result = await _paymentService.GetAllPayment();
+            var result = await _paymentService.GetAllTransactions();
 
             Assert.That(result.Count(), Is.EqualTo(2));
-            Assert.That(result.First().TransactionId, Is.EqualTo("TXN123"));
+            Assert.That(result.First().PaymentGatewayTransactionId, Is.EqualTo("TXN123"));
         }
 
         [Test]
-        public void GetAllPayment_ThrowsObjectsNotFoundException_WhenNoPaymentsExist()
+        public void GetAllTransactions_ThrowsObjectsNotFoundException_WhenNoTransactionsExist()
         {
-            Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _paymentService.GetAllPayment());
+            Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _paymentService.GetAllTransactions());
         }
 
         [Test]
-        public async Task GetAllPaymentRefund_ReturnsRefundTransactions_WhenRefundTransactionsExist()
+        public async Task GetAllTransactionsByType_ReturnsTransactions_WhenTransactionsExist()
         {
-            var refundTransaction1 = new RefundTransaction { RefundTransactionId = 1, RequestId = 1, TransactionDate = DateTime.UtcNow, TransactionId = "RTXN123", TransactionAmount = 100 };
-            var refundTransaction2 = new RefundTransaction { RefundTransactionId = 2, RequestId = 2, TransactionDate = DateTime.UtcNow, TransactionId = "RTXN124", TransactionAmount = 200 };
-            await _refundTransactionRepository.Add(refundTransaction1);
-            await _refundTransactionRepository.Add(refundTransaction2);
+            var transaction1 = new Transaction { TransactionId = 1, OrderId = 1, TransactionDate = DateTime.UtcNow, PaymentGatewayTransactionId = "TXN123", TransactionAmount = 100, TransactionType = "Payment" };
+            var transaction2 = new Transaction { TransactionId = 2, OrderId = 2, TransactionDate = DateTime.UtcNow, PaymentGatewayTransactionId = "TXN124", TransactionAmount = 200, TransactionType = "Refund" };
+            await _transactionRepository.Add(transaction1);
+            await _transactionRepository.Add(transaction2);
 
-            var result = await _paymentService.GetAllPaymentRefund();
+            var result = await _paymentService.GetAllTransactions("Payment");
 
-            Assert.That(result.Count(), Is.EqualTo(2));
-            Assert.That(result.First().TransactionId, Is.EqualTo("RTXN123"));
+            Assert.That(result.Count(), Is.EqualTo(1));
+            Assert.That(result.First().PaymentGatewayTransactionId, Is.EqualTo("TXN123"));
         }
 
         [Test]
-        public void GetAllPaymentRefund_ThrowsObjectsNotFoundException_WhenNoRefundTransactionsExist()
+        public void GetAllTransactionsByType_ThrowsObjectsNotFoundException_WhenNoTransactionsExist()
         {
-            Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _paymentService.GetAllPaymentRefund());
+            Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _paymentService.GetAllTransactions("NonExistentType"));
         }
 
         [Test]
-        public async Task GetPayment_ReturnsPayment_WhenPaymentExists()
+        public async Task GetTransaction_ReturnsTransaction_WhenTransactionExists()
         {
-            var payment = new Payment { PaymentId = 1, OrderId = 1, PaymentDate = DateTime.UtcNow, TransactionId = "TXN123", Amount = 100 };
-            await _paymentRepository.Add(payment);
+            var transaction = new Transaction { TransactionId = 1, OrderId = 1, TransactionDate = DateTime.UtcNow, PaymentGatewayTransactionId = "TXN123", TransactionAmount = 100, TransactionType = "Payment" };
+            await _transactionRepository.Add(transaction);
 
-            var result = await _paymentService.GetPayment(1);
+            var result = await _paymentService.GetTransaction(1);
 
             Assert.IsNotNull(result);
-            Assert.That(result.TransactionId, Is.EqualTo("TXN123"));
+            Assert.That(result.PaymentGatewayTransactionId, Is.EqualTo("TXN123"));
         }
 
         [Test]
-        public void GetPayment_ThrowsObjectNotFoundException_WhenPaymentDoesNotExist()
+        public void GetTransaction_ThrowsObjectNotFoundException_WhenTransactionDoesNotExist()
         {
-            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _paymentService.GetPayment(999));
+            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _paymentService.GetTransaction(999));
         }
 
         [Test]
-        public async Task GetPaymentRefund_ReturnsRefundTransaction_WhenRefundTransactionExists()
+        public async Task ProcessPayment_AddsTransactionSuccessfully()
         {
-            var refundTransaction = new RefundTransaction { RefundTransactionId = 1, RequestId = 1, TransactionDate = DateTime.UtcNow, TransactionId = "RTXN123", TransactionAmount = 100 };
-            await _refundTransactionRepository.Add(refundTransaction);
+            var transactionDTO = new TransactionDTO { OrderId = 1, TransactionId = "TXN123", Amount = 100, TransactionType = "Payment", PaymentDate = DateTime.UtcNow };
 
-            var result = await _paymentService.GetPaymentRefund(1);
+            var result = await _paymentService.ProcessPayment(transactionDTO);
 
             Assert.IsNotNull(result);
-            Assert.That(result.TransactionId, Is.EqualTo("RTXN123"));
+            Assert.That(result.PaymentGatewayTransactionId, Is.EqualTo("TXN123"));
+            var transactions = await _transactionRepository.GetAll();
+            Assert.That(transactions.Count(), Is.EqualTo(1));
         }
 
         [Test]
-        public void GetPaymentRefund_ThrowsObjectNotFoundException_WhenRefundTransactionDoesNotExist()
+        public async Task ProcessRefund_AddsRefundTransactionSuccessfully()
         {
-            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _paymentService.GetPaymentRefund(999));
-        }
+            var transactionDTO = new TransactionDTO { RequestId = 1, TransactionId = "RTXN123", Amount = 100, TransactionType = "Refund", PaymentDate = DateTime.UtcNow };
 
-        [Test]
-        public async Task ProcessPayment_AddsPaymentSuccessfully()
-        {
-            var paymentDTO = new PaymentDTO { OrderId = 1, TransactionId = "TXN123", Amount = 100 };
-
-            var result = await _paymentService.ProcessPayment(paymentDTO);
+            var result = await _paymentService.ProcessPayment(transactionDTO);
 
             Assert.IsNotNull(result);
-            Assert.That(result.TransactionId, Is.EqualTo("TXN123"));
-            var payments = await _paymentRepository.GetAll();
-            Assert.That(payments.Count(), Is.EqualTo(1));
-        }
-
-        [Test]
-        public async Task ProcessPaymentRefund_AddsRefundTransactionSuccessfully()
-        {
-            var paymentDTO = new PaymentDTO { OrderId = 1, TransactionId = "RTXN123", Amount = 100 };
-
-            var result = await _paymentService.ProcessPaymentRefund(paymentDTO);
-
-            Assert.IsNotNull(result);
-            Assert.That(result.TransactionId, Is.EqualTo("RTXN123"));
-            var refunds = await _refundTransactionRepository.GetAll();
-            Assert.That(refunds.Count(), Is.EqualTo(1));
+            Assert.That(result.PaymentGatewayTransactionId, Is.EqualTo("RTXN123"));
+            var transactions = await _transactionRepository.GetAll();
+            Assert.That(transactions.Count(), Is.EqualTo(1));
         }
     }
 }

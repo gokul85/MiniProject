@@ -5,8 +5,9 @@ namespace ReturnManagementSystem.Interfaces
 {
     public interface IProductService
     {
-        public Task<Product> AddProduct(ProductDTO productDTO);
+        public Task<ProductReturnDTO> AddProduct(ProductDTO productDTO);
         Task<IEnumerable<Product>> GetAllProducts();
-        Task<Product> UpdateProduct(int productId, ProductDTO productDto);
+        Task<ProductReturnDTO> GetProductById(int id);
+        Task<ProductReturnDTO> UpdateProduct(int productId, ProductDTO productDto);
     }
 }

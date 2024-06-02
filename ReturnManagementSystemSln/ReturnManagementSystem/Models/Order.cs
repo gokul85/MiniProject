@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ReturnManagementSystem.Models
 {
@@ -8,8 +9,8 @@ namespace ReturnManagementSystem.Models
         public Order()
         {
             OrderProducts = new HashSet<OrderProduct>();
-            Payments = new HashSet<Payment>();
             ReturnRequests = new HashSet<ReturnRequest>();
+            Transactions = new HashSet<Transaction>();
         }
 
         public int OrderId { get; set; }
@@ -17,10 +18,11 @@ namespace ReturnManagementSystem.Models
         public DateTime? OrderDate { get; set; }
         public decimal? TotalAmount { get; set; }
         public string? OrderStatus { get; set; }
-
+        [JsonIgnore]
         public virtual User? User { get; set; }
         public virtual ICollection<OrderProduct> OrderProducts { get; set; }
-        public virtual ICollection<Payment> Payments { get; set; }
+        [JsonIgnore]
         public virtual ICollection<ReturnRequest> ReturnRequests { get; set; }
+        public virtual ICollection<Transaction> Transactions { get; set; }
     }
 }

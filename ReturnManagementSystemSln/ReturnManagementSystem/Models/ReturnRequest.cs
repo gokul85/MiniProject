@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ReturnManagementSystem.Models
 {
@@ -7,7 +8,7 @@ namespace ReturnManagementSystem.Models
     {
         public ReturnRequest()
         {
-            RefundTransactions = new HashSet<RefundTransaction>();
+            Transactions = new HashSet<Transaction>();
         }
 
         public int RequestId { get; set; }
@@ -23,12 +24,14 @@ namespace ReturnManagementSystem.Models
         public string? Status { get; set; }
         public int? ClosedBy { get; set; }
         public DateTime? ClosedDate { get; set; }
-
+        [JsonIgnore]
         public virtual User? ClosedByNavigation { get; set; }
         public virtual Order? Order { get; set; }
         public virtual Product? Product { get; set; }
+        [JsonIgnore]
         public virtual ProductItem? SerialNumberNavigation { get; set; }
+        [JsonIgnore]
         public virtual User? User { get; set; }
-        public virtual ICollection<RefundTransaction> RefundTransactions { get; set; }
+        public virtual ICollection<Transaction> Transactions { get; set; }
     }
 }

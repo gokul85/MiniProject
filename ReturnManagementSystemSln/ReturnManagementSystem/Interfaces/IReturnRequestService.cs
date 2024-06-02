@@ -6,9 +6,12 @@ namespace ReturnManagementSystem.Interfaces
     public interface IReturnRequestService
     {
         Task<ReturnRequest> OpenReturnRequest(ReturnRequestDTO returnRequestDTO);
-        Task<ReturnRequest> UpdateUserSerialNumber(int requestId, string serialNumber);
-        Task<ReturnRequest> TechnicalReview(int requestId, string process, string feedback);
-        Task<ReturnRequest> CloseReturnRequest(int requestId, int userId, string feedback);
+        Task<ReturnRequest> UpdateUserSerialNumber(UpdateRequestSerialNumberDTO ursnDTO);
+        Task<ReturnRequest> TechnicalReview(TechnicalReviewDTO technicalReviewDTO);
+        Task<ReturnRequest> CloseReturnRequest( int userId, CloseRequestDTO crrDTO);
+        Task<IEnumerable<ReturnRequest>> GetAllReturnRequests();
+        Task<IEnumerable<ReturnRequest>> GetAllUserReturnRequests(int userid);
+        Task<ReturnRequest> GetReturnRequest(int requestid);
     }
 
 }

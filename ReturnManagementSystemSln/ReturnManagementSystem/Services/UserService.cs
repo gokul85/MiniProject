@@ -143,6 +143,26 @@ namespace ReturnManagementSystem.Services
             userdetail.Password = hMACSHA.ComputeHash(Encoding.UTF8.GetBytes(userDTO.Password));
             return userdetail;
         }
+
+        public async Task<IEnumerable<User>> GetAllUsers()
+        {
+            var result = await _userrepo.GetAll();
+            if (result == null)
+                throw new ObjectsNotFoundException("Users Not Found");
+            return result;
+        }
+
+        public async Task<string> UpdateUserRole(int userId, string role)
+        {
+            User user = await _userrepo.Get(userId);
+            if (user == null)
+            {
+                throw new NoUserFoundException("No User Found");
+            }
+            user.Role = role;
+            await _userrepo.Update(user);
+            return $"{user.Name} is now {role}";
+        }
     }
 }
 

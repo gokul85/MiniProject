@@ -3,7 +3,6 @@ using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models;
 using ReturnManagementSystem.Models.DTOs.OrderDTOs;
 using ReturnManagementSystem.Models.DTOs.RRandPaymentDTOs;
-using ReturnManagementSystem.Repositories;
 
 namespace ReturnManagementSystem.Services
 {
@@ -23,7 +22,7 @@ namespace ReturnManagementSystem.Services
             _orderProductRepository = orderProductRepository;
             _paymentService = paymentService;
         }
-        public async Task<Order> CreateOrder(OrderDTO orderDTO)
+        public async Task<OrderReturnDTO> CreateOrder(OrderDTO orderDTO)
         {
             var order = new Order()
             {
@@ -61,39 +60,71 @@ namespace ReturnManagementSystem.Services
                         await _productItemRepository.Update(asn);
                     }
                 }
-                var paymentDTO = new PaymentDTO
+                var transactionDTO = new TransactionDTO
                 {
                     OrderId = aorder.OrderId,
                     Amount = orderDTO.TotalAmount,
-                    TransactionId = Guid.NewGuid().ToString()
+                    TransactionId = Guid.NewGuid().ToString(),
+                    PaymentDate = DateTime.Now,
+                    TransactionType = "Payment"
                 };
-
-                await _paymentService.ProcessPayment(paymentDTO);
+                await _paymentService.ProcessPayment(transactionDTO);
             }
             catch (Exception ex)
             {
                 throw ex;
             }
-            return aorder;
+            return MapOrderReturnDTO(aorder);
+        }
+
+        public async Task<IEnumerable<Order>> GetAllOrders()
+        {
+            var res = await _orderRepository.GetAllWithIncludes(o=>o.Transactions, o=>o.OrderProducts);
+            if (res == null || res.Count() == 0)
+                throw new ObjectsNotFoundException("Orders Not Found");
+            return res;
         }
 
         public async Task<IEnumerable<Order>> GetAllUserOrders(int userId)
         {
-            var res = await _orderRepository.FindAll(o => o.UserId == userId);
+            var res = await _orderRepository.FindAllWithIncludes(o => o.UserId == userId, o => o.Transactions, o => o.OrderProducts);
             if (res == null || res.Count() == 0)
                 throw new ObjectsNotFoundException("Orders Not Found For this User");
             return res;
         }
 
-        public async Task<Order> UpdateOrderStatus(int orderId, string orderStatus)
+        public async Task<OrderReturnDTO> GetOrder(int orderid)
         {
-            var order = await _orderRepository.Get(orderId);
+            var res = await _orderRepository.FindAllWithIncludes(o=> o.OrderId == orderid, o => o.Transactions, o => o.OrderProducts);
+            if (res == null)
+                throw new ObjectNotFoundException("Order Not Found");
+            return MapOrderReturnDTO(res.First());
+        }
+
+        private OrderReturnDTO MapOrderReturnDTO(Order res)
+        {
+            OrderReturnDTO orderReturnDTO = new OrderReturnDTO()
+            {
+                OrderId = res.OrderId,
+                UserId = res.UserId,
+                OrderDate = res.OrderDate,
+                TotalAmount = res.TotalAmount,
+                OrderStatus = res.OrderStatus,
+                OrderProducts = res.OrderProducts.ToList()
+
+            };
+            return orderReturnDTO;
+        }
+
+        public async Task<Order> UpdateOrderStatus(UpdateOrderStatusDTO uosDTO)
+        {
+            var order = await _orderRepository.Get(uosDTO.OrderId);
             if (order == null)
             {
                 throw new ObjectNotFoundException("Order not found");
             }
 
-            order.OrderStatus = orderStatus;
+            order.OrderStatus = uosDTO.OrderStatus;
 
             return await _orderRepository.Update(order);
         }

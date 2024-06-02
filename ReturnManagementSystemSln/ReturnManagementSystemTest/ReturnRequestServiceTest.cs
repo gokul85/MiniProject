@@ -22,8 +22,10 @@ namespace ReturnManagementSystemTest
         private IRepository<int, Product> _productRepository;
         private IRepository<int, ProductItem> _productItemRepository;
         private IRepository<int, Policy> _policyRepository;
+        private IRepository<int, Transaction> _transactionRepository;
         private IProductItemService _productItemService;
         private ReturnManagementSystemContext _context;
+        private IPaymentService _paymentService;
 
         [SetUp]
         public void Setup()
@@ -39,7 +41,9 @@ namespace ReturnManagementSystemTest
             _productRepository = new ProductRepository(_context);
             _productItemRepository = new ProductItemRepository(_context);
             _policyRepository = new PolicyRepository(_context);
+            _transactionRepository = new TransactionRepository(_context);
             _productItemService = new ProductItemService(_productItemRepository, _productRepository);
+            _paymentService = new PaymentService(_transactionRepository);
 
             _returnRequestService = new ReturnRequestService(
                 _returnRequestRepository,
@@ -48,7 +52,8 @@ namespace ReturnManagementSystemTest
                 _productRepository,
                 _productItemRepository,
                 _policyRepository,
-                _productItemService
+                _productItemService,
+                _paymentService
             );
         }
 
@@ -222,7 +227,7 @@ namespace ReturnManagementSystemTest
             };
             await _returnRequestRepository.Add(returnRequest);
 
-            var result = await _returnRequestService.CloseReturnRequest(1, 1, "Feedback");
+            var result = await _returnRequestService.CloseReturnRequest(1, new CloseRequestDTO() { Feedback = "Feedback", RequestId = 1 });
 
             Assert.IsNotNull(result);
             Assert.That(result.Status, Is.EqualTo("Closed"));
@@ -232,7 +237,7 @@ namespace ReturnManagementSystemTest
         [Test]
         public void CloseReturnRequestTestNotFound()
         {
-            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _returnRequestService.CloseReturnRequest(999, 1, "Feedback"));
+            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _returnRequestService.CloseReturnRequest(1, new CloseRequestDTO() { Feedback = "Feedback", RequestId = 999 }));
         }
 
         [Test]
@@ -259,7 +264,7 @@ namespace ReturnManagementSystemTest
             };
             await _orderProductRepository.Add(orderProduct);
 
-            var result = await _returnRequestService.UpdateUserSerialNumber(1, "SN1");
+            var result = await _returnRequestService.UpdateUserSerialNumber(new UpdateRequestSerialNumberDTO(){ RquestId =1, SerialNumber ="SN1" });
 
             Assert.IsNotNull(result);
             Assert.That(result.SerialNumber, Is.EqualTo("SN1"));
@@ -269,7 +274,7 @@ namespace ReturnManagementSystemTest
         [Test]
         public void UpdateUserSerialNumberTestReturnRequestNotFound()
         {
-            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _returnRequestService.UpdateUserSerialNumber(999, "SN1"));
+            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _returnRequestService.UpdateUserSerialNumber(new UpdateRequestSerialNumberDTO() { RquestId = 999, SerialNumber = "SN1" }));
         }
 
         [Test]
@@ -288,7 +293,7 @@ namespace ReturnManagementSystemTest
             };
             await _returnRequestRepository.Add(returnRequest);
 
-            Assert.ThrowsAsync<InvalidSerialNumber>(async () => await _returnRequestService.UpdateUserSerialNumber(1, "InvalidSN"));
+            Assert.ThrowsAsync<InvalidSerialNumber>(async () => await _returnRequestService.UpdateUserSerialNumber(new UpdateRequestSerialNumberDTO() { RquestId = 1, SerialNumber = "SN9999" }));
         }
 
 
@@ -298,12 +303,10 @@ namespace ReturnManagementSystemTest
         [Test]
         public void TechnicalReview_ReturnRequestNotFound_ThrowsObjectNotFoundException()
         {
-            // Arrange
-            int invalidRequestId = 999;
+            TechnicalReviewDTO technicalReviewDTO = new TechnicalReviewDTO() { requestId = 999, feedback = "feedback", process = "Return Good" };
 
-            // Act & Assert
             Assert.ThrowsAsync<ObjectNotFoundException>(async () =>
-                await _returnRequestService.TechnicalReview(invalidRequestId, "Return Good", "Feedback"));
+                await _returnRequestService.TechnicalReview(technicalReviewDTO));
         }
 
         [Test]
@@ -324,9 +327,11 @@ namespace ReturnManagementSystemTest
             };
             _returnRequestRepository.Add(returnRequest).Wait();
 
+            TechnicalReviewDTO technicalReviewDTO = new TechnicalReviewDTO() { requestId = 1, feedback = "feedback", process = "Return" };
+
             // Act & Assert
             Assert.ThrowsAsync<InvalidDataException>(async () =>
-                await _returnRequestService.TechnicalReview(1, "Invalid Process", "Feedback"));
+                await _returnRequestService.TechnicalReview(technicalReviewDTO));
         }
 
         [Test]
@@ -373,9 +378,10 @@ namespace ReturnManagementSystemTest
             };
             await _orderProductRepository.Add(orderProduct);
 
-            // Act & Assert
+            TechnicalReviewDTO technicalReviewDTO = new TechnicalReviewDTO() { requestId = 1, feedback = "feedback", process = "Replace Repaired" };
+
             Assert.ThrowsAsync<InvalidDataException>(async () =>
-                await _returnRequestService.TechnicalReview(1, "Replace Repaired", "Feedback"));
+                await _returnRequestService.TechnicalReview(technicalReviewDTO));
         }
 
         [TestCase(1, "Return Good", "Feedback")]
@@ -447,7 +453,8 @@ namespace ReturnManagementSystemTest
             {
                 OrderId = 1,
                 ProductId = 1,
-                SerialNumber = "SN1"
+                SerialNumber = "SN1",
+                Price = 1000
             };
             await _orderProductRepository.Add(orderProduct);
 
@@ -466,13 +473,170 @@ namespace ReturnManagementSystemTest
                 await _productItemRepository.Add(replacementProductItem);
             }
 
-            // Act
-            var result = await _returnRequestService.TechnicalReview(1, process, feedback);
+            TechnicalReviewDTO technicalReviewDTO = new TechnicalReviewDTO() { requestId = 1, feedback = feedback, process = process };
+
+            var result = await _returnRequestService.TechnicalReview(technicalReviewDTO);
              
             // Assert
             Assert.IsNotNull(result);
             Assert.That(result.Process, Is.EqualTo(process));
             Assert.That(result.Feedback, Is.EqualTo(feedback));
+        }
+
+
+        [Test]
+        public async Task GetAllRequestTestNoRequestsFound()
+        {
+            var ex = Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _returnRequestService.GetAllReturnRequests());
+            Assert.AreEqual("Return Requests Not Found", ex.Message);
+        }
+        [Test]
+        public async Task GetAllUserRequestTestNoRequestsFound()
+        {
+            var ex = Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _returnRequestService.GetAllUserReturnRequests(2));
+            Assert.AreEqual("Return Requests Not Found", ex.Message);
+        }
+
+        [Test]
+        public async Task GetAllUserReturnRequestSuccess()
+        {
+            var order = new Order
+            {
+                OrderId = 1,
+                UserId = 1,
+                OrderDate = DateTime.Now.AddDays(-1),
+                OrderStatus = "Delivered"
+            };
+            await _orderRepository.Add(order);
+
+            var orderProduct = new OrderProduct
+            {
+                OrderId = 1,
+                ProductId = 1,
+                SerialNumber = "SN1"
+            };
+            await _orderProductRepository.Add(orderProduct);
+
+            var policy = new Policy
+            {
+                ProductId = 1,
+                PolicyType = "Return",
+                Duration = 30
+            };
+            await _policyRepository.Add(policy);
+
+            var returnRequestDTO = new ReturnRequestDTO
+            {
+                UserId = 1,
+                OrderId = 1,
+                ProductId = 1,
+                ReturnPolicy = "Return",
+                Reason = "Defective"
+            };
+
+            await _returnRequestService.OpenReturnRequest(returnRequestDTO);
+
+            var result = await _returnRequestService.GetAllUserReturnRequests(1);
+
+            Assert.IsNotNull(result);
+            Assert.That(result.Any());
+        }
+
+        [Test]
+        public async Task GetAllRquestTestSuccess()
+        {
+            var order = new Order
+            {
+                OrderId = 1,
+                UserId = 1,
+                OrderDate = DateTime.Now.AddDays(-1),
+                OrderStatus = "Delivered"
+            };
+            await _orderRepository.Add(order);
+
+            var orderProduct = new OrderProduct
+            {
+                OrderId = 1,
+                ProductId = 1,
+                SerialNumber = "SN1"
+            };
+            await _orderProductRepository.Add(orderProduct);
+
+            var policy = new Policy
+            {
+                ProductId = 1,
+                PolicyType = "Return",
+                Duration = 30
+            };
+            await _policyRepository.Add(policy);
+
+            var returnRequestDTO = new ReturnRequestDTO
+            {
+                UserId = 1,
+                OrderId = 1,
+                ProductId = 1,
+                ReturnPolicy = "Return",
+                Reason = "Defective"
+            };
+
+            await _returnRequestService.OpenReturnRequest(returnRequestDTO);
+
+            var result = await _returnRequestService.GetAllReturnRequests();
+
+            Assert.IsNotNull(result);
+            Assert.That(result.Any());
+            Assert.That(result.Count(), Is.EqualTo(1));
+        }
+
+        [Test]
+        public async Task GetRequestTestSuccess()
+        {
+            var order = new Order
+            {
+                OrderId = 1,
+                UserId = 1,
+                OrderDate = DateTime.Now.AddDays(-1),
+                OrderStatus = "Delivered"
+            };
+            await _orderRepository.Add(order);
+
+            var orderProduct = new OrderProduct
+            {
+                OrderId = 1,
+                ProductId = 1,
+                SerialNumber = "SN1"
+            };
+            await _orderProductRepository.Add(orderProduct);
+
+            var policy = new Policy
+            {
+                ProductId = 1,
+                PolicyType = "Return",
+                Duration = 30
+            };
+            await _policyRepository.Add(policy);
+
+            var returnRequestDTO = new ReturnRequestDTO
+            {
+                UserId = 1,
+                OrderId = 1,
+                ProductId = 1,
+                ReturnPolicy = "Return",
+                Reason = "Defective"
+            };
+
+            await _returnRequestService.OpenReturnRequest(returnRequestDTO);
+
+            var result = await _returnRequestService.GetReturnRequest(1);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(returnRequestDTO.UserId, result.UserId);
+        }
+
+        [Test]
+        public void GetRequestTestNoRequestFound()
+        {
+            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _returnRequestService.GetReturnRequest(999));
         }
     }
 }

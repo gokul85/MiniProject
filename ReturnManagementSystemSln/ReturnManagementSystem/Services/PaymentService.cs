@@ -8,77 +8,70 @@ namespace ReturnManagementSystem.Services
 {
     public class PaymentService : IPaymentService
     {
-        private readonly IRepository<int, Payment> _paymentRepository;
-        private readonly IRepository<int, RefundTransaction> _refundTransactionRepository;
+        private readonly IRepository<int, Transaction> _transactionRepository;
 
-        public PaymentService(IRepository<int, Payment> paymentRepository, IRepository<int, RefundTransaction> refundTransactionRepository)
+        public PaymentService(IRepository<int, Transaction> transactionRepository)
         {
-            _paymentRepository = paymentRepository;
-            _refundTransactionRepository = refundTransactionRepository;
+            _transactionRepository = transactionRepository;
         }
 
-        public async Task<IEnumerable<Payment>> GetAllPayment()
+        public async Task<IEnumerable<Transaction>> GetAllTransactions()
         {
-            var payments = await _paymentRepository.GetAll();
-            if (payments != null)
+            var transactions = await _transactionRepository.GetAll();
+            if (transactions != null)
             {
-                return payments;
+                return transactions;
             }
-            throw new ObjectsNotFoundException("No Payments Found");
+            throw new ObjectsNotFoundException("No Transactions Found");
         }
 
-        public async Task<IEnumerable<RefundTransaction>> GetAllPaymentRefund()
+        public async Task<IEnumerable<Transaction>> GetAllTransactions(string transactiontype)
         {
-            var refundTransactions = await _refundTransactionRepository.GetAll();
-            if (refundTransactions != null)
+            var transactions = await _transactionRepository.FindAll(t => t.TransactionType == transactiontype);
+            if (transactions != null)
             {
-                return refundTransactions;
+                return transactions;
             }
-            throw new ObjectsNotFoundException("No Refund Payments Found");
+            throw new ObjectsNotFoundException("No Transactions Found");
         }
 
-        public async Task<Payment> GetPayment(int paymentId)
+        public async Task<Transaction> GetTransaction(int transactionId)
         {
-            var payment =  await _paymentRepository.Get(paymentId);
-            if(payment == null)
+            var transaction =  await _transactionRepository.Get(transactionId);
+            if(transaction == null)
             {
-                throw new ObjectNotFoundException("Payment Not Found");
+                throw new ObjectNotFoundException("Transaction Not Found");
             }
-            return payment;
+            return transaction;
         }
 
-        public async Task<RefundTransaction> GetPaymentRefund(int paymentId)
+        public async Task<Transaction> ProcessPayment(TransactionDTO transactionDTO)
         {
-            var refundpayment = await _refundTransactionRepository.Get(paymentId);
-            if(refundpayment == null)
+            Transaction transaction;
+            if(transactionDTO.TransactionType == "Payment")
             {
-                throw new ObjectNotFoundException("Refund Payments Not Found");
+                transaction = new Transaction()
+                {
+                    OrderId = transactionDTO.OrderId,
+                    TransactionDate = transactionDTO.PaymentDate,
+                    PaymentGatewayTransactionId = transactionDTO.TransactionId,
+                    TransactionAmount = transactionDTO.Amount,
+                    TransactionType = transactionDTO.TransactionType,
+                };
             }
-            return refundpayment;
-        }
-
-        public async Task<Payment> ProcessPayment(PaymentDTO paymentDTO)
-        {
-            var payment = new Payment
+            else
             {
-                OrderId = paymentDTO.OrderId,
-                PaymentDate = DateTime.UtcNow,
-                TransactionId = paymentDTO.TransactionId,
-                Amount = paymentDTO.Amount
-            };
-
-            return await _paymentRepository.Add(payment);
-        }
-
-        public async Task<RefundTransaction> ProcessPaymentRefund(PaymentDTO paymentDTO)
-        {
-            var refundtras = new RefundTransaction() { 
-                RequestId = paymentDTO.OrderId, 
-                TransactionAmount = paymentDTO.Amount, 
-                TransactionId = paymentDTO.TransactionId, 
-                TransactionDate = DateTime.Now 
-            };
-            return await _refundTransactionRepository.Add(refundtras);
+                transaction = new Transaction()
+                {
+                    RequestId = transactionDTO.RequestId,
+                    TransactionDate = transactionDTO.PaymentDate,
+                    PaymentGatewayTransactionId = transactionDTO.TransactionId,
+                    TransactionAmount = transactionDTO.Amount,
+                    TransactionType = transactionDTO.TransactionType,
+                };
+            }
+            
+            return await _transactionRepository.Add(transaction);
         }
     }
 }

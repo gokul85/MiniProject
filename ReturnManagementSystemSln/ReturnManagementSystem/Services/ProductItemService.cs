@@ -52,6 +52,30 @@ namespace ReturnManagementSystem.Services
             return pires;
         }
 
+        public async Task<IEnumerable<ProductItem>> GetAllProductItems()
+        {
+            var productitems = await _productItemRepository.GetAll();
+            if (productitems != null)
+                return productitems;
+            throw new ObjectsNotFoundException("Product Items Not Found");
+        }
+
+        public async Task<IEnumerable<ProductItem>> GetAllProductItems(string status)
+        {
+            var productitems = await _productItemRepository.FindAll(pi => pi.Status == status);
+            if (productitems != null)
+                return productitems;
+            throw new ObjectsNotFoundException($"Product Items Not Found with status {status}");
+        }
+
+        public async Task<IEnumerable<ProductItem>> GetAllProductItemsByProductId(int productid)
+        {
+            var productitems = await _productItemRepository.FindAll(pi => pi.ProductId == productid);
+            if (productitems != null)
+                return productitems;
+            throw new ObjectsNotFoundException($"Product Items Not Found with product id {productid}");
+        }
+
         public async Task<ProductItem> UpdateProductItemRefurbished(int productId, string serialNumber)
         {
             var productItems = await _productItemRepository.FindAll(pi => pi.SerialNumber == serialNumber);
@@ -73,19 +97,19 @@ namespace ReturnManagementSystem.Services
             return await _productItemRepository.Update(productItem);
         }
 
-        public async Task<ProductItem> UpdateProductItemStatus(string serialNumber, string status)
+        public async Task<ProductItem> UpdateProductItemStatus(UpdateProductItemStatus upisDTO)
         {
-            var productItems = await _productItemRepository.FindAll(pi => pi.SerialNumber == serialNumber);
+            var productItems = await _productItemRepository.FindAll(pi => pi.SerialNumber == upisDTO.SerialNumber);
             if (productItems == null)
             {
                 throw new ObjectNotFoundException("Product item not found");
             }
             var productItem = productItems.FirstOrDefault();
-            if (productItem.Status == status)
+            if (productItem.Status == upisDTO.Status)
             {
                 return productItem;
             }
-            if(status == "Available")
+            if(upisDTO.Status == "Available")
             {
                 var product = await _productRepository.Get(productItem.ProductId??0);
                 product.Stock += 1;
@@ -97,7 +121,7 @@ namespace ReturnManagementSystem.Services
                 product.Stock -= 1;
                 await _productRepository.Update(product);
             }
-            productItem.Status = status;
+            productItem.Status = upisDTO.Status;
 
             return await _productItemRepository.Update(productItem);
         }

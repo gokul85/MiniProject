@@ -17,7 +17,7 @@ namespace ReturnManagementSystem.Services
             _policyRepository = policyRepository;
             _productitemRepository = productitemRepository;
         }
-        public async Task<Product> AddProduct(ProductDTO productDTO)
+        public async Task<ProductReturnDTO> AddProduct(ProductDTO productDTO)
         {
             var product = new Product
             {
@@ -53,15 +53,41 @@ namespace ReturnManagementSystem.Services
                     await _productRepository.Update(aproduct);
                 }
             }
-            return product;
+            return MapProductReturnDTO(product);
         }
 
         public async Task<IEnumerable<Product>> GetAllProducts()
         {
-            return await _productRepository.GetAll();
+            var products =  await _productRepository.GetAllWithIncludes(p=>p.Policies, p=>p.ProductItems);
+            if (products == null || products.Count() == 0)
+                throw new ObjectsNotFoundException("Products not found");
+            return products;
         }
 
-        public async Task<Product> UpdateProduct(int productId, ProductDTO productDTO)
+        public async Task<ProductReturnDTO> GetProductById(int id)
+        {
+            var product = await _productRepository.FindAllWithIncludes(p=>p.ProductId == id, p => p.Policies, p => p.ProductItems);
+            if (product != null) 
+                return MapProductReturnDTO(product.First());
+            throw new ObjectNotFoundException("Product not found");
+        }
+
+        private ProductReturnDTO MapProductReturnDTO(Product product)
+        {
+            ProductReturnDTO pr = new ProductReturnDTO()
+            {
+                ProductId = product.ProductId,
+                Name = product.Name,
+                Description = product.Description,
+                Price = product.Price,
+                Stock = product.Stock,
+                ProductStatus = product.ProductStatus,
+                Policies = product.Policies.ToList()
+            };
+            return pr;
+        }
+
+        public async Task<ProductReturnDTO> UpdateProduct(int productId, ProductDTO productDTO)
         {
             var product = await _productRepository.Get(productId);
             if (product == null) throw new ObjectNotFoundException("Product not found");
@@ -70,7 +96,8 @@ namespace ReturnManagementSystem.Services
             product.Description = productDTO.Description;
             product.Price = productDTO.Price;
 
-            return await _productRepository.Update(product);
+            var updateproduct = await _productRepository.Update(product);
+            return MapProductReturnDTO(updateproduct);
         }
     }
 }

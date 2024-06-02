@@ -16,13 +16,13 @@ namespace ReturnManagementSystem
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            //builder.Services.AddControllers();
 
             builder.Services.AddControllers().AddJsonOptions(options =>
             {
-                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.Preserve;
-                options.JsonSerializerOptions.WriteIndented = true; // Optional, for readable JSON output
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
             });
+
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(option =>
@@ -71,11 +71,10 @@ namespace ReturnManagementSystem
             #region repository
             builder.Services.AddScoped<IRepository<int, Order>, OrderRepository>();
             builder.Services.AddScoped<IRepository<int, OrderProduct>, OrderProductRepository>();
-            builder.Services.AddScoped<IRepository<int, Payment>, PaymentRepository>();
             builder.Services.AddScoped<IRepository<int, Policy>, PolicyRepository>();
             builder.Services.AddScoped<IRepository<int, Product>, ProductRepository>();
             builder.Services.AddScoped<IRepository<int, ProductItem>, ProductItemRepository>();
-            builder.Services.AddScoped<IRepository<int, RefundTransaction>, RefundTransactionRepository>();
+            builder.Services.AddScoped<IRepository<int, Transaction>, TransactionRepository>();
             builder.Services.AddScoped<IRepository<int, ReturnRequest>, ReturnRequestRepository>();
             builder.Services.AddScoped<IRepository<int, User>, UserRepository>();
             builder.Services.AddScoped<IRepository<int, UserDetail>, UserDetailRepository>();
@@ -85,6 +84,10 @@ namespace ReturnManagementSystem
             builder.Services.AddScoped<IProductService, ProductService>();
             builder.Services.AddScoped<ITokenService, TokenService>();
             builder.Services.AddScoped<IUserService, UserService>();
+            builder.Services.AddScoped<IOrderService, OrderService>();
+            builder.Services.AddScoped<IPaymentService, PaymentService>();
+            builder.Services.AddScoped<IProductItemService, ProductItemService>();
+            builder.Services.AddScoped<IReturnRequestService, ReturnRequestService>();
             #endregion
 
 

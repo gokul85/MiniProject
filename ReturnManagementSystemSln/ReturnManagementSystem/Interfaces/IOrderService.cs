@@ -5,8 +5,10 @@ namespace ReturnManagementSystem.Interfaces
 {
     public interface IOrderService
     {
-        Task<Order> CreateOrder(OrderDTO orderDTO);
+        Task<OrderReturnDTO> CreateOrder(OrderDTO orderDTO);
+        Task<IEnumerable<Order>> GetAllOrders();
+        Task<OrderReturnDTO> GetOrder(int orderid);
         Task<IEnumerable<Order>> GetAllUserOrders(int userId);
-        Task<Order> UpdateOrderStatus(int orderId, string orderStatus);
+        Task<Order> UpdateOrderStatus(UpdateOrderStatusDTO uosDTO);
     }
 }

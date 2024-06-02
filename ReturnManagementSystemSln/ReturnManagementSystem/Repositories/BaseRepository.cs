@@ -1,7 +1,9 @@
-﻿using ReturnManagementSystem.Exceptions;
+﻿using Microsoft.EntityFrameworkCore;
+using ReturnManagementSystem.Exceptions;
 using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models;
 using System;
+using System.Linq.Expressions;
 
 namespace ReturnManagementSystem.Repositories
 {
@@ -14,9 +16,9 @@ namespace ReturnManagementSystem.Repositories
         }
         public async Task<T> Add(T entity)
         {
-                _context.Add(entity);
-                await _context.SaveChangesAsync();
-                return entity;   
+            _context.Add(entity);
+            await _context.SaveChangesAsync();
+            return entity;   
         }
 
         public async Task<T> Delete(T entity)
@@ -55,6 +57,28 @@ namespace ReturnManagementSystem.Repositories
             _context.Update(entity);
             await _context.SaveChangesAsync();
             return entity;
+        }
+        public async Task<IEnumerable<T>> FindAllWithIncludes(Func<T, bool> predicate, params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _context.Set<T>();
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            var results = query.Where(predicate).ToList();
+            if (results.Count == 0)
+                return null;
+            return results;
+        }
+
+        public async Task<IEnumerable<T>> GetAllWithIncludes(params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _context.Set<T>();
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+            return await query.ToListAsync();
         }
     }
 }

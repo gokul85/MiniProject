@@ -5,12 +5,10 @@ namespace ReturnManagementSystem.Interfaces
 {
     public interface IPaymentService
     {
-        Task<Payment> ProcessPayment(PaymentDTO paymentDTO);
-        Task<Payment> GetPayment(int paymentId);
-        Task<RefundTransaction> ProcessPaymentRefund(PaymentDTO paymentDTO);
-        Task<RefundTransaction> GetPaymentRefund(int paymentId);
-        Task<IEnumerable<Payment>> GetAllPayment();
-        Task<IEnumerable<RefundTransaction>> GetAllPaymentRefund();
+        Task<IEnumerable<Transaction>> GetAllTransactions();
+        Task<IEnumerable<Transaction>> GetAllTransactions(string transactiontype);
+        Task<Transaction> GetTransaction(int transactionId);
+        Task<Transaction> ProcessPayment(TransactionDTO transactionDTO);
 
     }
 

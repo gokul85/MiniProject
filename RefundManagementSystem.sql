@@ -69,15 +69,6 @@ CREATE TABLE OrderProducts (
     Price DECIMAL(18, 2),
     SerialNumber VARCHAR(50) FOREIGN KEY REFERENCES ProductItems(SerialNumber)
 );
-
-CREATE TABLE Payments (
-    PaymentId INT IDENTITY(1,1) PRIMARY KEY,
-    OrderId INT FOREIGN KEY REFERENCES Orders(OrderId),
-    PaymentDate DATETIME,
-    TransactionId VARCHAR(100), -- Transaction ID from the payment gateway
-    Amount DECIMAL(18, 2)
-);
-
 CREATE TABLE ReturnRequests (
     RequestId INT IDENTITY(1,1) PRIMARY KEY,
     UserId INT FOREIGN KEY REFERENCES Users(Id),
@@ -94,10 +85,12 @@ CREATE TABLE ReturnRequests (
     ClosedDate DATETIME
 );
 
-CREATE TABLE RefundTransactions (
-    RefundTransactionId INT IDENTITY(1,1) PRIMARY KEY,
-    RequestId INT FOREIGN KEY REFERENCES ReturnRequests(RequestId),
+CREATE TABLE Transactions (
+    TransactionId INT IDENTITY(1,1) PRIMARY KEY,
+    OrderId INT NULL FOREIGN KEY REFERENCES Orders(OrderId),
+    RequestId INT NULL FOREIGN KEY REFERENCES ReturnRequests(RequestId),
     TransactionDate DATETIME,
     TransactionAmount DECIMAL(18, 2),
-    TransactionId VARCHAR(100) -- Transaction ID from the payment gateway
+    PaymentGatewayTransactionId VARCHAR(100), -- Transaction ID from the payment gateway
+    TransactionType VARCHAR(50)
 );

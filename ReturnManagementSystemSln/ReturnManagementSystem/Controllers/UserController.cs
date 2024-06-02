@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using ReturnManagementSystem.Exceptions;
 using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models;
 using ReturnManagementSystem.Models.DTOs;
@@ -8,12 +9,12 @@ namespace ReturnManagementSystem.Controllers
 {
     [Route("/api/[controller]")]
     [ApiController]
-    public class AuthController : ControllerBase
+    public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
-        private readonly ILogger<AuthController> _logger;
+        private readonly ILogger<UserController> _logger;
 
-        public AuthController(IUserService userService, ILogger<AuthController> logger)
+        public UserController(IUserService userService, ILogger<UserController> logger)
         {
             _userService = userService;
             _logger = logger;
@@ -83,6 +84,52 @@ namespace ReturnManagementSystem.Controllers
             {
                 _logger.LogError(ex, "Update status failed for user: {UserId}", userstatusDTO.UserId);
                 return BadRequest(new ErrorModel(501, ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Retrieves all users. Only accessible by Admins.
+        /// </summary>
+        /// <returns>A list of all users.</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("GetAllUsers")]
+        [ProducesResponseType(typeof(IEnumerable<User>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
+        {
+            try
+            {
+                var result = await _userService.GetAllUsers();
+                return Ok(result);
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogError(ex, "GetAllUsers failed: {Message}", ex.Message);
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Updates the role of a user. Only accessible by Admins.
+        /// </summary>
+        /// <param name="userId">The ID of the user to update.</param>
+        /// <param name="role">The new role of the user.</param>
+        /// <returns>A message indicating the result of the update.</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpPut("UpdateUserRole")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<string>> UpdateUserRole(int userId, string role)
+        {
+            try
+            {
+                string result = await _userService.UpdateUserRole(userId, role);
+                return Ok(result);
+            }
+            catch (NoUserFoundException ex)
+            {
+                _logger.LogError(ex, "UpdateUserRole failed for userId: {UserId}", userId);
+                return NotFound(new ErrorModel(404, ex.Message));
             }
         }
     }

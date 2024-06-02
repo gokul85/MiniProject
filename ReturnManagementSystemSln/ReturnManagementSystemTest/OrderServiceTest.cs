@@ -29,7 +29,7 @@ namespace ReturnManagementSystemTest
         public void Setup()
         {
             var options = new DbContextOptionsBuilder<ReturnManagementSystemContext>()
-                .UseInMemoryDatabase("OrderTestDB").Options;
+                .UseInMemoryDatabase("OrderTestDB_"+Guid.NewGuid()).Options;
             _context = new ReturnManagementSystemContext(options);
 
             _orderRepository = new OrderRepository(_context);
@@ -40,6 +40,8 @@ namespace ReturnManagementSystemTest
 
             _orderService = new OrderService(_orderRepository, _productItemRepository, _productRepository, _orderProductRepository, _mockPaymentService.Object);
         }
+
+        
 
         [Test]
         public async Task CreateOrderTestSuccess()
@@ -75,7 +77,6 @@ namespace ReturnManagementSystemTest
                     }
                 }
             };
-
 
             var result = await _orderService.CreateOrder(orderDTO);
 
@@ -139,17 +140,23 @@ namespace ReturnManagementSystemTest
 
             Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _orderService.CreateOrder(orderDTO));
         }
-
+        [Test]
+        public async Task GetAllOrdersTestNoOrdersFound()
+        {
+            var ex = Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _orderService.GetAllOrders());
+            Assert.AreEqual("Orders Not Found", ex.Message);
+        }
         [Test]
         public async Task GetAllUserOrdersTestNoOrdersFound()
         {
-            Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _orderService.GetAllUserOrders(2));
+            var userId = 2;
+            var ex = Assert.ThrowsAsync<ObjectsNotFoundException>(async () => await _orderService.GetAllUserOrders(userId));
+            Assert.AreEqual("Orders Not Found For this User", ex.Message);
         }
 
         [Test]
         public async Task GetAllUserOrdersTestSuccess()
         {
-
             var order = new Order
             {
                 UserId = 1,
@@ -166,7 +173,7 @@ namespace ReturnManagementSystemTest
         }
 
         [Test]
-        public async Task UpdateOrderStatusTestSuccess()
+        public async Task GetAllOrdersTestSuccess()
         {
             var order = new Order
             {
@@ -177,7 +184,53 @@ namespace ReturnManagementSystemTest
             };
             await _orderRepository.Add(order);
 
-            var result = await _orderService.UpdateOrderStatus(order.OrderId, "Delivered");
+            var result = await _orderService.GetAllOrders();
+
+            Assert.IsNotNull(result);
+            Assert.That(result.Any());
+        }
+
+        [Test]
+        public async Task GetOrderTestSuccess()
+        {
+            var order = new Order
+            {
+                UserId = 1,
+                OrderDate = DateTime.Now,
+                TotalAmount = 100,
+                OrderStatus = "Pending"
+            };
+            var addedOrder = await _orderRepository.Add(order);
+
+            var result = await _orderService.GetOrder(addedOrder.OrderId);
+
+            Assert.IsNotNull(result);
+            Assert.AreEqual(order.UserId, result.UserId);
+        }
+
+        [Test]
+        public void GetOrderTestOrderNotFound()
+        {
+            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _orderService.GetOrder(999));
+        }
+
+        [Test]
+        public async Task UpdateOrderStatusTestSuccess()
+        {
+            var order = new Order
+            {
+                UserId = 1,
+                OrderDate = DateTime.Now,
+                TotalAmount = 100,
+                OrderStatus = "Pending"
+            };
+            var addedOrder = await _orderRepository.Add(order);
+            
+            var result = await _orderService.UpdateOrderStatus(new UpdateOrderStatusDTO()
+            {
+                OrderId = addedOrder.OrderId,
+                OrderStatus = "Delivered"
+            });
 
             Assert.IsNotNull(result);
             Assert.That(result.OrderStatus, Is.EqualTo("Delivered"));
@@ -186,7 +239,7 @@ namespace ReturnManagementSystemTest
         [Test]
         public void UpdateOrderStatusTestOrderNotFound()
         {
-            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _orderService.UpdateOrderStatus(999, "Delivered"));
+            Assert.ThrowsAsync<ObjectNotFoundException>(async () => await _orderService.UpdateOrderStatus(new UpdateOrderStatusDTO() { OrderId=999,OrderStatus="Delivered"}));
         }
     }
 }

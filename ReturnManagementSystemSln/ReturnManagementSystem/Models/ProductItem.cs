@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace ReturnManagementSystem.Models
 {
@@ -15,9 +16,11 @@ namespace ReturnManagementSystem.Models
         public string SerialNumber { get; set; } = null!;
         public int? ProductId { get; set; }
         public string? Status { get; set; }
-
+        [JsonIgnore]
         public virtual Product? Product { get; set; }
+        [JsonIgnore]
         public virtual ICollection<OrderProduct> OrderProducts { get; set; }
+        [JsonIgnore]
         public virtual ICollection<ReturnRequest> ReturnRequests { get; set; }
     }
 }
