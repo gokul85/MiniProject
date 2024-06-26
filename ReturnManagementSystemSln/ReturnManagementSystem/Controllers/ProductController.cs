@@ -71,6 +71,33 @@ namespace ReturnManagementSystem.Controllers
         }
 
         /// <summary>
+        /// Retrieves all products count.
+        /// </summary>
+        /// <returns>Products Count.</returns>
+        [HttpGet("GetAllProductsCount")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status500InternalServerError)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<int>> GetAllProductsCount()
+        {
+            try
+            {
+                var products = await _productService.GetAllProducts();
+                return Ok(products.Count());
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "No products found.");
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Get all products failed.");
+                return StatusCode(500, new ErrorModel(500, ex.Message));
+            }
+        }
+
+        /// <summary>
         /// Retrieves a product by its ID.
         /// </summary>
         /// <param name="id">The product ID.</param>

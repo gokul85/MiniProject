@@ -14,6 +14,7 @@ namespace ReturnManagementSystem.Models
         [JsonIgnore]
         public virtual Order? Order { get; set; }
         public virtual Product? Product { get; set; }
+        [JsonIgnore]
         public virtual ProductItem? SerialNumberNavigation { get; set; }
     }
 }

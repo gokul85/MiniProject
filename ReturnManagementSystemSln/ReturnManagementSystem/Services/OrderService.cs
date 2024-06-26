@@ -24,11 +24,11 @@ namespace ReturnManagementSystem.Services
         }
         public async Task<OrderReturnDTO> CreateOrder(OrderDTO orderDTO)
         {
+            decimal ordertotal = 0;
             var order = new Order()
             {
                 UserId = orderDTO.UserId,
                 OrderDate = DateTime.Now,
-                TotalAmount = orderDTO.TotalAmount,
                 OrderStatus = "Pending"
             };
             var aorder = await _orderRepository.Add(order);
@@ -47,6 +47,7 @@ namespace ReturnManagementSystem.Services
                     }
                     for (int i = 0; i < op.Quantity; i++)
                     {
+                        ordertotal += (decimal)product.Price;
                         var asn = (await _productItemRepository.FindAll(pi => pi.ProductId == op.ProductId && pi.Status == "Available")).FirstOrDefault();
                         OrderProduct orderproduct = new OrderProduct()
                         {
@@ -60,10 +61,12 @@ namespace ReturnManagementSystem.Services
                         await _productItemRepository.Update(asn);
                     }
                 }
+                aorder.TotalAmount = ordertotal;
+                var updateorder = await _orderRepository.Update(aorder);
                 var transactionDTO = new TransactionDTO
                 {
                     OrderId = aorder.OrderId,
-                    Amount = orderDTO.TotalAmount,
+                    Amount = ordertotal,
                     TransactionId = Guid.NewGuid().ToString(),
                     PaymentDate = DateTime.Now,
                     TransactionType = "Payment"
@@ -72,6 +75,7 @@ namespace ReturnManagementSystem.Services
             }
             catch (Exception ex)
             {
+                await _orderRepository.Delete(aorder);
                 throw ex;
             }
             return MapOrderReturnDTO(aorder);
@@ -79,7 +83,7 @@ namespace ReturnManagementSystem.Services
 
         public async Task<IEnumerable<Order>> GetAllOrders()
         {
-            var res = await _orderRepository.GetAllWithIncludes(o=>o.Transactions, o=>o.OrderProducts);
+            var res = await _orderRepository.GetAllWithIncludes(o=>o.Transactions, o=>o.OrderProducts, o =>o.User);
             if (res == null || res.Count() == 0)
                 throw new ObjectsNotFoundException("Orders Not Found");
             return res;
@@ -110,8 +114,8 @@ namespace ReturnManagementSystem.Services
                 OrderDate = res.OrderDate,
                 TotalAmount = res.TotalAmount,
                 OrderStatus = res.OrderStatus,
-                OrderProducts = res.OrderProducts.ToList()
-
+                OrderProducts = res.OrderProducts.ToList(),
+                Transactions = res.Transactions.ToList(),
             };
             return orderReturnDTO;
         }

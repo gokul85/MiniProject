@@ -106,6 +106,7 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="productId">The product ID.</param>
         /// <returns>A list of product items with the specified product ID.</returns>
         [HttpGet("GetProductItemsByProductId")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(List<ProductItem>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
@@ -135,6 +136,7 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="status">The new status.</param>
         /// <returns>The updated product item.</returns>
         [HttpPut("UpdateProductItemStatus")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ProductItem), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProductItem>> UpdateProductItemStatus(UpdateProductItemStatus upis)
@@ -163,6 +165,7 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="serialNumber">The serial number of the product item.</param>
         /// <returns>The updated product item.</returns>
         [HttpPut("UpdateProductItemRefurbished")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(ProductItem), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProductItem>> UpdateProductItemRefurbished(int productId, string serialNumber)
@@ -174,7 +177,7 @@ namespace ReturnManagementSystem.Controllers
             }
             catch (ObjectNotFoundException ex)
             {
-                _logger.LogWarning(ex, "Product item not found with serial number {SerialNumber}", serialNumber);
+                _logger.LogWarning(ex, ex.Message);
                 return NotFound(new ErrorModel(404, ex.Message));
             }
             catch (Exception ex)

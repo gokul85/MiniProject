@@ -1,0 +1,98 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('./main.css');
+
+* {
+    margin: 0;
+}
+
+body {
+    background: #2148C0;
+    font-family: 'Montserrat';
+}
+
+.login-container {
+    background: url('../images/bg.svg');
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-img {
+    width: 120px;
+    height: 98px;
+    margin-bottom: 50px;
+}
+
+.input-container {
+    width: 300px;
+    height: 45px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border: 1px solid #FFFFFF;
+    border-radius: 5px;
+    margin: 10px 0;
+}
+
+.input-container icon {
+    height: 25px;
+}
+
+.input-container input {
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 80%;
+    height: 25px;
+    color: #FFFFFF;
+}
+
+.input-container input::placeholder {
+    color: #FFFFFF;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.loginform {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-btn {
+    background: #FFFFFF;
+    width: 300px;
+    margin: 30px 0 20px 0;
+    color: #2148C0;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 20px;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.login-btn:hover {
+    background-color: #FFFFFF;
+    color: #2148C0;
+    font-weight: 700;
+}
+
+.forgot-link,
+.register-link {
+    margin: 10px 0;
+    width: 300px;
+    text-align: end;
+}
+
+.forgot-link a,
+.register-link a {
+    text-decoration: none;
+    color: #FFFFFF;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 20px;
+}

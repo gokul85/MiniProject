@@ -16,6 +16,7 @@ namespace ReturnManagementSystem.Services
         private readonly IRepository<int,ProductItem> _productItemRepository;
         private readonly IRepository<int,Policy> _policyRepository;
         private readonly IProductItemService _productItemService;
+        private readonly IProductService _productService;
         private readonly IPaymentService _paymentService;
 
         public ReturnRequestService(IRepository<int, ReturnRequest> returnRequestRepository,
@@ -25,6 +26,7 @@ namespace ReturnManagementSystem.Services
             IRepository<int, ProductItem> productItemRepository,
             IRepository<int, Policy> policyRepository,
             IProductItemService productItemService,
+            IProductService productService,
             IPaymentService paymentService
             )
         {
@@ -35,6 +37,7 @@ namespace ReturnManagementSystem.Services
             _productItemRepository = productItemRepository;
             _policyRepository = policyRepository;
             _productItemService = productItemService;
+            _productService = productService;
             _paymentService = paymentService;
         }
         public async Task<ReturnRequest> CloseReturnRequest(int userId , CloseRequestDTO crrDTO)
@@ -55,11 +58,12 @@ namespace ReturnManagementSystem.Services
 
         public async Task<ReturnRequest> OpenReturnRequest(ReturnRequestDTO returnRequestDTO)
         {
-            var order = await _orderRepository.Get(returnRequestDTO.OrderId);
-            if( order == null || order.UserId != returnRequestDTO.UserId || order.OrderStatus != "Delivered")
+            var orders = await _orderRepository.FindAllWithIncludes(o=>o.OrderId == returnRequestDTO.OrderId, o=>o.OrderProducts);
+            if( orders == null || orders.First().UserId != returnRequestDTO.UserId || orders.First().OrderStatus != "Delivered")
             {
                 throw new ObjectNotFoundException("Invalid Order");
             }
+            var order = orders.First();
             var opress = order.OrderProducts.Where(op => op.ProductId == returnRequestDTO.ProductId).FirstOrDefault();
             if(opress == null)
             {
@@ -101,26 +105,31 @@ namespace ReturnManagementSystem.Services
             switch (technicalReviewDTO.process)
             {
                 case "Return Good":
+                    returnRequest.Process = "Refunded";
                     await HandleReturnGood(returnRequest);
                     break;
                 case "Return Bad":
+                    returnRequest.Process = "Refunded";
                     await HandleReturnBad(returnRequest);
                     break;
                 case "Replace Repaired":
+                    returnRequest.Process = "Replaced";
                     await HandleReplaceRepaired(returnRequest);
                     break;
                 case "Replace Bad":
+                    returnRequest.Process = "Replaced";
                     await HandleReplaceBad(returnRequest);
                     break;
                 case "Repaired":
+                    returnRequest.Process = "Repaired";
                     await HandleRepaired(returnRequest);
                     break;
                 default:
                     throw new InvalidDataException("Invalid Process");
             }
 
-            returnRequest.Process = technicalReviewDTO.process;
             returnRequest.Feedback = technicalReviewDTO.feedback;
+            returnRequest.Status = "Processed";
 
             return await _returnRequestRepository.Update(returnRequest);
         }
@@ -147,7 +156,7 @@ namespace ReturnManagementSystem.Services
             await _productItemService.UpdateProductItemStatus(upis);
         }
 
-        private async Task HandleReplaceRepaired(ReturnRequest returnRequest)
+        private async Task HandleReplace(ReturnRequest returnRequest)
         {
             var availableItems = await _productItemRepository.FindAll(pi => pi.ProductId == returnRequest.ProductId && pi.Status == "Available");
             if (availableItems == null)
@@ -156,25 +165,59 @@ namespace ReturnManagementSystem.Services
             }
 
             var replacementItem = availableItems.First();
-            replacementItem.Status = "Replaced";
-            await _productItemRepository.Update(replacementItem);
+            var upis = new UpdateProductItemStatus()
+            {
+                SerialNumber = replacementItem.SerialNumber,
+                Status = "Replaced"
+            };
+            await _productItemService.UpdateProductItemStatus(upis);
 
             var orderProduct = await _orderProductRepository.FindAll(op => op.OrderId == returnRequest.OrderId && op.ProductId == returnRequest.ProductId && op.SerialNumber == returnRequest.SerialNumber);
+            if (orderProduct == null)
+            {
+                var upis2 = new UpdateProductItemStatus()
+                {
+                    SerialNumber = replacementItem.SerialNumber,
+                    Status = "Available"
+                };
+                await _productItemService.UpdateProductItemStatus(upis2);
+                throw new InvalidDataException("Invalid Request or Request Already Processed");
+            }
             var orderProductToUpdate = orderProduct.First();
             orderProductToUpdate.SerialNumber = replacementItem.SerialNumber;
             await _orderProductRepository.Update(orderProductToUpdate);
+        }
 
-            var upis = new UpdateProductItemStatus()
+        private async Task HandleReplaceRepaired(ReturnRequest returnRequest)
+        {
+            await HandleReplace(returnRequest);
+
+            var oldproduct = await _productRepository.Get((int)returnRequest.ProductId);
+
+            var newrefurbishedprod = new ProductDTO()
             {
-                SerialNumber = returnRequest.SerialNumber,
-                Status = "Disposed"
+                Name = oldproduct.Name,
+                Description = oldproduct.Description,
+                Price = (decimal)oldproduct.Price * 0.75m,
+                Policies = oldproduct.Policies.Select(ConvertToPolicyDTO).ToList(),
             };
-            await _productItemService.UpdateProductItemStatus(upis);
+            var newproduct = await _productService.AddProduct(newrefurbishedprod);
+
+            await _productItemService.UpdateProductItemRefurbished(newproduct.ProductId, returnRequest.SerialNumber);
+        }
+
+        private PolicyDTO ConvertToPolicyDTO(Policy policy)
+        {
+            return new PolicyDTO
+            {
+                PolicyType = policy.PolicyType,
+                Duration = policy.Duration ?? 0
+            };
         }
 
         private async Task HandleReplaceBad(ReturnRequest returnRequest)
         {
-            await HandleReplaceRepaired(returnRequest);
+            await HandleReplace(returnRequest);
             var upis = new UpdateProductItemStatus()
             {
                 SerialNumber = returnRequest.SerialNumber,
@@ -229,7 +272,7 @@ namespace ReturnManagementSystem.Services
 
         public async Task<IEnumerable<ReturnRequest>> GetAllReturnRequests()
         {
-            var returnrequests = await _returnRequestRepository.FindAllWithIncludes(rr => rr.Status != "Closed", r=>r.Transactions, r=>r.Product, r=>r.Order);
+            var returnrequests = await _returnRequestRepository.GetAllWithIncludes(r=>r.Transactions, r=>r.Product, r=>r.Order);
             if (returnrequests == null)
                 throw new ObjectsNotFoundException("Return Requests Not Found");
             return returnrequests;

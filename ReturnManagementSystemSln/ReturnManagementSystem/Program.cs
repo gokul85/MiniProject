@@ -16,6 +16,12 @@ namespace ReturnManagementSystem
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAllOrigins",builder=>builder.AllowAnyOrigin().AllowAnyHeader()
+                                  .AllowAnyMethod());
+            });
+
             //builder.Services.AddControllers();
 
             builder.Services.AddControllers().AddJsonOptions(options =>
@@ -99,6 +105,8 @@ namespace ReturnManagementSystem
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            app.UseCors("AllowAllOrigins");
 
             app.UseAuthentication();
             app.UseAuthorization();

@@ -3,6 +3,7 @@ using ReturnManagementSystem.Exceptions;
 using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models.DTOs.RRandPaymentDTOs;
 using ReturnManagementSystem.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ReturnManagementSystem.Controllers
 {
@@ -24,6 +25,7 @@ namespace ReturnManagementSystem.Controllers
         /// </summary>
         /// <returns>All transactions.</returns>
         [HttpGet("GetAllTransactions")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(IEnumerable<Transaction>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Transaction>>> GetAllTransactions()
@@ -51,6 +53,7 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="transactionType">The type of the transactions to retrieve.</param>
         /// <returns>All transactions of the specified type.</returns>
         [HttpGet("GetTransactionsByType")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(IEnumerable<Transaction>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<IEnumerable<Transaction>>> GetAllTransactionsByType(string transactionType)
@@ -78,6 +81,7 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="transactionId">The ID of the transaction to retrieve.</param>
         /// <returns>The transaction with the specified ID.</returns>
         [HttpGet("GetTransaction")]
+        [Authorize(Roles = "Admin")]
         [ProducesResponseType(typeof(Transaction), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<Transaction>> GetTransaction(int transactionId)
@@ -95,58 +99,6 @@ namespace ReturnManagementSystem.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while retrieving the transaction");
-                return StatusCode(500, new ErrorModel(500, ex.Message));
-            }
-        }
-
-        /// <summary>
-        /// Retrieves all payments.
-        /// </summary>
-        /// <returns>All payments.</returns>
-        [HttpGet("GetAllPayments")]
-        [ProducesResponseType(typeof(IEnumerable<Transaction>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<Transaction>>> GetAllPayments()
-        {
-            try
-            {
-                var transactions = await _paymentService.GetAllTransactions("Payment");
-                return Ok(transactions);
-            }
-            catch (ObjectsNotFoundException ex)
-            {
-                _logger.LogError(ex, "No payments found");
-                return NotFound(new ErrorModel(404, ex.Message));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while retrieving payments");
-                return StatusCode(500, new ErrorModel(500, ex.Message));
-            }
-        }
-
-        /// <summary>
-        /// Retrieves all refund payments.
-        /// </summary>
-        /// <returns>All refund payments.</returns>
-        [HttpGet("GetAllRefundPayments")]
-        [ProducesResponseType(typeof(IEnumerable<Transaction>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<Transaction>>> GetAllRefundPayments()
-        {
-            try
-            {
-                var transactions = await _paymentService.GetAllTransactions("Refund");
-                return Ok(transactions);
-            }
-            catch (ObjectsNotFoundException ex)
-            {
-                _logger.LogError(ex, "No refund payments found");
-                return NotFound(new ErrorModel(404, ex.Message));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while retrieving refund payments");
                 return StatusCode(500, new ErrorModel(500, ex.Message));
             }
         }

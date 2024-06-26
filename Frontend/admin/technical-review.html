@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="assets/css/view-product.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', async (event) => {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const roleres = await fetch("http://localhost:5173/api/User/VerifyRole", { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const role = await roleres.text();
+            if (role !== 'Admin') {
+                window.location.href = '/index.html';
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div id="wrapper" class="d-flex">
+        <div id="sidebar-wrapper" class="border-right">
+            <nav class="nav flex-column p-3">
+                <a class="nav-link" href="dashboard.html">Dashboard</a>
+                <h5 class="side-bar-text-head">Products</h5>
+                <a class="nav-link" href="all-products.html">All Products</a>
+                <a class="nav-link" href="add-product.html">Add Product</a>
+                <h5 class="side-bar-text-head mt-3">Orders</h5>
+                <a class="nav-link" href="all-orders.html">All Orders</a>
+                <h5 class="side-bar-text-head mt-3">Return Requests</h5>
+                <a class="nav-link" href="all-return-requests.html">All Return Requests</a>
+                <a class="nav-link" href="update-serial-number.html">Update Serial Number</a>
+                <a class="nav-link" href="close-return-request.html">Close Return Request</a>
+                <a class="nav-link link-active" href="#">Technical Review</a>
+                <a class="nav-link logout-link" onclick="logout()"><i
+                        class="fa-solid fa-right-from-bracket"></i>&nbsp;&nbsp;Logout</a>
+            </nav>
+        </div>
+        <div id="page-content-wrapper">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+                <div class="container-fluid">
+                    <div class="d-flex">
+                        <button class="btn btn-primary" id="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+                        <div class="navbar-brand fw-bold p-2">Admin Dashboard</div>
+                    </div>
+                    <span class="mb-0 h6">Technical Review</span>
+                </div>
+            </nav>
+            <div class="container-fluid pt-3">
+                <div class="container">
+                    <h1 class="text-center mb-4">Technical Review</h1>
+                    <table class="table table-striped" id="technical-review-table">
+                        <thead>
+                            <tr>
+                                <th>Request ID</th>
+                                <th>User ID</th>
+                                <th>Order ID</th>
+                                <th>Product ID</th>
+                                <th>Request Date</th>
+                                <th>Return Policy</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="technical-review-body">
+                            <!-- Return Requests -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+
+    <div class="modal fade" id="technicalReviewModal" tabindex="-1" aria-labelledby="technicalReviewModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="technicalReviewModalLabel">Technical Review</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="technical-review-form" data-requestid="">
+                        <div class="mb-3">
+                            <label for="process" class="form-label">Process</label>
+                            <select class="form-select" id="process" required>
+                                <option value="">Select process</option>
+                                <option value="Return Good">Return Good</option>
+                                <option value="Return Bad">Return Bad</option>
+                                <option value="Replace Repaired">Replace Repaired</option>
+                                <option value="Replace Bad">Replace Bad</option>
+                                <option value="Repaired">Repaired</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="feedback" class="form-label">Feedback</label>
+                            <textarea class="form-control" id="feedback" rows="3" required></textarea>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-primary">Submit Review</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="../assets/js/main.js"></script>
+    <script>
+        document.getElementById("menu-toggle").addEventListener("click", function () {
+            document.getElementById("wrapper").classList.toggle("toggled");
+        });
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const returnRequestsResponse = await fetch('http://localhost:5173/api/ReturnRequest/GetAllReturnRequests', {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                });
+                var returnRequests = []
+                if (!returnRequestsResponse.ok) {
+                    if (returnRequestsResponse.status !== 404)
+                        throw new Error('Failed to fetch return requests');
+                } else {
+                    returnRequests = await returnRequestsResponse.json();
+                }
+
+                const technicalReviewBody = document.getElementById('technical-review-body');
+                technicalReviewBody.innerHTML = '';
+                returnRequests.filter(request => request.status === 'Processing').forEach(request => {
+                    const row = `
+                <tr>
+                    <td>${request.requestId}</td>
+                    <td>${request.userId}</td>
+                    <td>${request.orderId}</td>
+                    <td>${request.productId}</td>
+                    <td>${new Date(request.requestDate).toLocaleString()}</td>
+                    <td>${request.returnPolicy}</td>
+                    <td>${request.reason}</td>
+                    <td>${request.status}</td>
+                    <td>
+                        <button class="btn btn-primary review-request-btn" data-bs-toggle="modal"
+                            data-bs-target="#technicalReviewModal" data-requestid="${request.requestId}">Review</button>
+                    </td>
+                </tr>
+            `;
+                    technicalReviewBody.innerHTML += row;
+                });
+
+                if ($.fn.DataTable.isDataTable('#technical-review-table')) {
+                    $('#technical-review-table').DataTable().destroy();
+                }
+                $('#technical-review-table').DataTable({
+                    responsive: true,
+                    searching: true,
+                    paging: true,
+                    ordering: true,
+                    order: [],
+                    lengthChange: false,
+                    pageLength: 10,
+                    language: {
+                        search: "Search :"
+                    },
+                    columnDefs: [
+                        {
+                            targets: [0],
+                            searchable: true
+                        },
+                        {
+                            targets: '_all',
+                            searchable: false
+                        }
+                    ]
+                });
+
+                $('#technicalReviewModal').on('show.bs.modal', async function (event) {
+                    const button = $(event.relatedTarget);
+                    const requestId = button.data('requestid');
+                    const modal = $(this);
+                    modal.find('.modal-title').text('Technical Review');
+                    modal.find('#technical-review-form').data('requestid', requestId);
+                });
+
+                $('#technical-review-form').on('submit', async function (event) {
+                    event.preventDefault();
+                    const requestId = $(this).data('requestid');
+                    const process = $('#process').val();
+                    const feedback = $('#feedback').val();
+                    try {
+                        const reviewResponse = await fetch(`http://localhost:5173/api/ReturnRequest/TechnicalReview`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify({ requestId, process, feedback })
+                        });
+                        if (!reviewResponse.ok) {
+                            var data = await reviewResponse.json();
+                            throw new Error(data.errorMessage);
+                        }
+                        $('#technicalReviewModal').modal('hide');
+                        showToast('Technical review completed successfully', 'success');
+                    } catch (error) {
+                        showToast(error.message, 'error');
+                    }
+                });
+
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+    </script>
+</body>
+
+</html>

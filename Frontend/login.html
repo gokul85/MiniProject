@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="./assets/css/login.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', async (event) => {
+            const token = localStorage.getItem('token');
+            const roleres = await fetch("http://localhost:5173/api/User/VerifyRole", { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const role = await roleres.text();
+            if (token != null || token != "") {
+                if (role === 'Admin') {
+                    window.location.href = '/admin/dashboard.html';
+                } else if (role === 'User') {
+                    window.location.href = '/index.html';
+                }
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="loginform">
+            <div class="login-img">
+                <img src="./assets/images/cart.svg" alt="Cart Image">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/user.svg" alt="">
+                </i>
+                <input type="text" placeholder="USERNAME" id="username">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/lock.svg" alt="">
+                </i>
+                <input type="password" placeholder="PASSWORD" id="password">
+            </div>
+            <button class="btn login-btn" onclick="login()">LOGIN</button>
+            <div class="forgot-link">
+                <a href="#">Forgot password?</a>
+            </div>
+            <div class="register-link">
+                <a href="/register.html">New User?, Register Here</a>
+            </div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+
+    <script src="./assets/js/main.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                showToast('Please enter both username and password.', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5173/api/User/Login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username: username, password: password })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.errorMessage);
+                }
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                showToast('Login successful!', 'success');
+                if (data.role === "Admin") {
+                    window.location.href = '/admin/dashboard.html';
+                } else if (data.role === "User") {
+                    window.location.href = '/index.html';
+                }
+            } catch (error) {
+                showToast('Login failed: ' + error.message, 'error');
+            }
+        }
+
+    </script>
+</body>
+
+</html>

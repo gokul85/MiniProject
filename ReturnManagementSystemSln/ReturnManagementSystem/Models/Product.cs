@@ -23,6 +23,7 @@ namespace ReturnManagementSystem.Models
         [JsonIgnore]
         public virtual ICollection<OrderProduct> OrderProducts { get; set; }
         public virtual ICollection<Policy> Policies { get; set; }
+        [JsonIgnore]
         public virtual ICollection<ProductItem> ProductItems { get; set; }
         [JsonIgnore]
         public virtual ICollection<ReturnRequest> ReturnRequests { get; set; }

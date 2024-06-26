@@ -4,6 +4,7 @@ using ReturnManagementSystem.Exceptions;
 using ReturnManagementSystem.Interfaces;
 using ReturnManagementSystem.Models;
 using ReturnManagementSystem.Models.DTOs;
+using System.Security.Claims;
 
 namespace ReturnManagementSystem.Controllers
 {
@@ -110,6 +111,28 @@ namespace ReturnManagementSystem.Controllers
         }
 
         /// <summary>
+        /// Retrieves all users count
+        /// </summary>
+        /// <returns>Users Count</returns>
+        [Authorize(Roles = "Admin")]
+        [HttpGet("GetAllUsersCount")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<int>> GetAllUsersCount()
+        {
+            try
+            {
+                var result = await _userService.GetAllUsers();
+                return Ok(result.Count());
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogError(ex, "GetAllUsers failed: {Message}", ex.Message);
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+        }
+
+        /// <summary>
         /// Updates the role of a user. Only accessible by Admins.
         /// </summary>
         /// <param name="userId">The ID of the user to update.</param>
@@ -130,6 +153,23 @@ namespace ReturnManagementSystem.Controllers
             {
                 _logger.LogError(ex, "UpdateUserRole failed for userId: {UserId}", userId);
                 return NotFound(new ErrorModel(404, ex.Message));
+            }
+        }
+
+        [Authorize]
+        [HttpGet("VerifyRole")]
+        [ProducesResponseType(typeof(string), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<string>> VerifyRole()
+        {
+            try
+            {
+                var result = User.FindFirstValue(ClaimTypes.Role);
+                return Ok(result);
+            }
+            catch (NoUserFoundException ex)
+            {
+                return NotFound(new ErrorModel(400, ex.Message));
             }
         }
     }

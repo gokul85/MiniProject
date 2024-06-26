@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="./assets/css/register.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', async (event) => {
+            const token = localStorage.getItem('token');
+            const roleres = await fetch("http://localhost:5173/api/User/VerifyRole", { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const role = await roleres.text();
+            if (token != null || token != "") {
+                if (role === 'Admin') {
+                    window.location.href = '/admin/dashboard.html';
+                } else if (role === 'User') {
+                    window.location.href = '/index.html';
+                }
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div class="register-container d-flex justify-content-center align-items-center">
+        <div class="registerform">
+            <div class="register-img">
+                <img src="./assets/images/cart.svg" alt="Cart Image">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/lock.svg" alt="">
+                </i>
+                <input type="text" placeholder="NAME" id="name">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/lock.svg" alt="">
+                </i>
+                <input type="email" placeholder="EMAIL" id="email">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/lock.svg" alt="">
+                </i>
+                <input type="number" placeholder="PHONE" id="phone">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/lock.svg" alt="">
+                </i>
+                <input type="text" placeholder="ADDRESS" id="address">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/user.svg" alt="">
+                </i>
+                <input type="text" placeholder="USERNAME" id="username">
+            </div>
+            <div class="input-container">
+                <i class="icon">
+                    <img src="./assets/images/lock.svg" alt="">
+                </i>
+                <input type="text" placeholder="PASSWORD" id="password">
+            </div>
+            <button class="btn register-btn" onclick="register()">REGISTER</button>
+            <div class="login-link">
+                <a href="/login.html">Already a User?, Login Here</a>
+            </div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+
+    <script src="./assets/js/main.js"></script>
+    <script>
+        async function register() {
+            const name = document.getElementById("name").value;
+            const email = document.getElementById("email").value;
+            const phone = document.getElementById("phone").value;
+            const address = document.getElementById("address").value;
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+
+            if (!name || !email || !phone || !address || !username || !password) {
+                showToast("Please fill all the details", "error");
+                return;
+            }
+
+            try {
+                const response = await fetch('http://localhost:5173/api/User/Register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name: name, email: email, phone: phone, address: address, username: username, password: password })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Register failed');
+                }
+
+                const data = await response.json();
+                localStorage.setItem('token', data.token);
+                window.location.href = "/login.html";
+                showToast('Register successful!', 'success');
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        }
+    </script>
+</body>
+
+</html>

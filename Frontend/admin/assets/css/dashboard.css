@@ -1,0 +1,170 @@
+body {
+    overflow-x: hidden;
+    background-color: #F8F8F9;
+}
+
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 10px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    border-radius: 5px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    transform: translateY(-20px);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.success {
+    background-color: #70ff74;
+}
+
+.toast.error {
+    background-color: #ff7b71;
+}
+
+@media screen and (max-width: 400px) {
+    #toast-container {
+        left: 10px;
+    }
+
+    .navbar-brand {
+        font-size: 0.8rem;
+    }
+}
+
+#wrapper {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+#sidebar-wrapper {
+    min-width: 250px;
+    max-width: 250px;
+    height: 100%;
+    background-color: #ffffff;
+    transition: all 0.3s;
+    position: relative;
+    z-index: 1000;
+    margin-top: 56px;
+}
+
+#sidebar-wrapper .nav {
+    display: flex;
+    flex-direction: column;
+}
+
+#sidebar-wrapper .nav h5 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+#sidebar-wrapper .nav-link {
+    padding: 5px 15px;
+    margin: 2px 0;
+    color: rgb(150, 150, 150);
+    text-decoration: none;
+    transition: background-color 0.3s, color 0.3s;
+    border-radius: 5px;
+}
+
+#sidebar-wrapper .nav-link:hover {
+    background-color: #3461e7;
+    color: #ffffff;
+}
+
+.link-active {
+    background-color: #3461e7;
+    color: #ffffff !important;
+}
+
+#page-content-wrapper {
+    width: 100%;
+    overflow-y: auto;
+    padding-top: 56px;
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: -250px;
+}
+
+.side-bar-text {
+    color: rgb(150, 150, 150);
+}
+
+.side-bar-text-head {
+    color: #3461e7;
+}
+
+#menu-toggle {
+    width: 50px;
+}
+
+@media (min-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    #sidebar-wrapper {
+        position: absolute;
+        height: 100%;
+        z-index: 1000;
+        margin-left: -250px;
+    }
+
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: 0;
+    }
+
+    #page-content-wrapper {
+        margin-left: 0;
+    }
+
+    #menu-toggle {
+        display: inline-block;
+        cursor: pointer;
+    }
+}
+
+.card {
+    border: none;
+    border-radius: 0.5rem;
+    transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.card-text {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: right;
+}
+
+.logout-link {
+    cursor: pointer;
+}

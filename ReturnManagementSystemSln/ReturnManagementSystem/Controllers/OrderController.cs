@@ -74,6 +74,33 @@ namespace ReturnManagementSystem.Controllers
         }
 
         /// <summary>
+        /// Gets all orders Count.
+        /// </summary>
+        /// <returns>Orders Count.</returns>
+        [HttpGet("GetAllOrdersCount")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<int>> GetAllOrdersCount()
+        {
+            try
+            {
+                var orders = await _orderService.GetAllOrders();
+                return Ok(orders.Count());
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Orders not found");
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting all orders");
+                return StatusCode(500, new ErrorModel(500, ex.Message));
+            }
+        }
+
+        /// <summary>
         /// Gets all orders for a user.
         /// </summary>
         /// <param name="userId">The user ID.</param>

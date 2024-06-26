@@ -19,6 +19,11 @@ namespace ReturnManagementSystem.Services
         }
         public async Task<ProductReturnDTO> AddProduct(ProductDTO productDTO)
         {
+            var prodcheck = await _productRepository.FindAll(p=>p.Name == productDTO.Name);
+            if (prodcheck.Any())
+            {
+                throw new InvalidDataException("Product Already Found Exception");
+            }
             var product = new Product
             {
                 Name = productDTO.Name,
@@ -40,17 +45,24 @@ namespace ReturnManagementSystem.Services
             }
             foreach(var pi in productDTO.ProductItems)
             {
-                ProductItem productitem = new ProductItem
+                try
                 {
-                    SerialNumber = pi.SerialNumber,
-                    Status = "Available",
-                    ProductId = aproduct.ProductId
-                };
-                var addedpi = await _productitemRepository.Add(productitem);
-                if(addedpi != null)
+                    ProductItem productitem = new ProductItem
+                    {
+                        SerialNumber = pi.SerialNumber,
+                        Status = "Available",
+                        ProductId = aproduct.ProductId
+                    };
+                    var addedpi = await _productitemRepository.Add(productitem);
+                    if (addedpi != null)
+                    {
+                        aproduct.Stock += 1;
+                        await _productRepository.Update(aproduct);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    aproduct.Stock += 1;
-                    await _productRepository.Update(aproduct);
+                    continue;
                 }
             }
             return MapProductReturnDTO(product);

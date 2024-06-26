@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" href="assets/css/view-product.css">
+    <script>
+        document.addEventListener('DOMContentLoaded', async (event) => {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const roleres = await fetch("http://localhost:5173/api/User/VerifyRole", { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const role = await roleres.text();
+            if (role !== 'Admin') {
+                window.location.href = '/index.html';
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <div id="wrapper" class="d-flex">
+        <div id="sidebar-wrapper" class="border-right">
+            <nav class="nav flex-column p-3">
+                <a class="nav-link" href="dashboard.html">Dashboard</a>
+                <h5 class="side-bar-text-head">Products</h5>
+                <a class="nav-link" href="all-products.html">All Products</a>
+                <a class="nav-link" href="add-product.html">Add Product</a>
+                <h5 class="side-bar-text-head mt-3">Orders</h5>
+                <a class="nav-link" href="all-orders.html">All Orders</a>
+                <h5 class="side-bar-text-head mt-3">Return Requests</h5>
+                <a class="nav-link" href="all-return-requests.html">All Return Requests</a>
+                <a class="nav-link" href="update-serial-number.html">Update Serial Number</a>
+                <a class="nav-link" href="close-return-request.html">Close Return Request</a>
+                <a class="nav-link" href="technical-review.html">Technical Review</a>
+                <a class="nav-link logout-link" onclick="logout()"><i
+                        class="fa-solid fa-right-from-bracket"></i>&nbsp;&nbsp;Logout</a>
+            </nav>
+        </div>
+        <div id="page-content-wrapper">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light fixed-top">
+                <div class="container-fluid">
+                    <div class="d-flex">
+                        <button class="btn btn-primary" id="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+                        <div class="navbar-brand fw-bold p-2">Admin Dashboard</div>
+                    </div>
+                    <span class="mb-0 h6">View Product</span>
+                </div>
+            </nav>
+            <div class="container-fluid pt-3">
+                <div class="container mt-5">
+                    <h1 class="text-center mb-4">Product Details</h1>
+                    <div id="product-details">
+                        <!-- Product details -->
+                    </div>
+                    <div class="mt-5">
+                        <h2 class="text-center">Product Items</h2>
+                        <button class="btn btn-success mb-3" data-bs-toggle="modal"
+                            data-bs-target="#addProductItemsModal">Add
+                            Product Items</button>
+                        <table class="table table-striped" id="product-items-table">
+                            <thead>
+                                <tr>
+                                    <th>Serial Number</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="product-items-body">
+                                <!-- Product items -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="updateProductItemsModal" tabindex="-1"
+                    aria-labelledby="updateProductItemsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="updateProductItemsModalLabel">Update Product Item Status
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="updateProductItemForm">
+                                    <input type="hidden" id="productItemSerialNumber" name="productItemSerialNumber">
+                                    <div class="mb-3">
+                                        <label for="status" class="form-label">Status</label>
+                                        <select class="form-select" id="status" name="status" required>
+                                            <option value="Available">Available</option>
+                                            <option value="Ordered">Ordered</option>
+                                            <option value="Disposed">Disposed</option>
+                                            <option value="Replaced">Replaced</option>
+                                        </select>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">Update</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal fade" id="addProductItemsModal" tabindex="-1"
+                    aria-labelledby="addProductItemsModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="addProductItemsModalLabel">Add Product Items</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="addProductItemsForm">
+                                    <div id="serialNumbersContainer">
+                                        <div class="mb-3">
+                                            <label for="serialNumber1" class="form-label">Serial Number</label>
+                                            <input type="text" class="form-control serialNumber" id="serialNumber1"
+                                                name="serialNumber1" required>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-secondary" id="addSerialNumberField">Add
+                                        Another Serial
+                                        Number</button>
+                                    <button type="submit" class="btn btn-primary mt-3">Add Product Items</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="../assets/js/main.js"></script>
+    <script>
+        document.getElementById("menu-toggle").addEventListener("click", function () {
+            document.getElementById("wrapper").classList.toggle("toggled");
+        });
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!productId) {
+                window.location.href = "/admin/all-products.html";
+                return;
+            }
+
+            try {
+                const productResponse = await fetch(`http://localhost:5173/api/Product/GetProductById?id=${productId}`);
+                if (!productResponse.ok) throw new Error('Failed to fetch product details');
+                const product = await productResponse.json();
+
+                const productDetailsContainer = document.getElementById('product-details');
+                productDetailsContainer.innerHTML = `
+                    <div class="mb-3">
+                        <strong>Product Name:</strong> ${product.name}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Description:</strong> ${product.description}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Price:</strong> ${product.price.toFixed(2)}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Stock:</strong> ${product.stock}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Status:</strong> ${product.productStatus}
+                    </div>
+                `;
+
+                const fetchProductItems = async () => {
+                    const productItemsResponse = await fetch(`http://localhost:5173/api/ProductItem/GetProductItemsByProductId?productId=${productId}`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + localStorage.getItem('token')
+                        }
+                    });
+                    if (!productItemsResponse.ok) throw new Error('Failed to fetch product items');
+                    const productItems = await productItemsResponse.json();
+
+                    if ($.fn.DataTable.isDataTable('#product-items-table')) {
+                        $('#product-items-table').DataTable().destroy();
+                    }
+                    const productItemsBody = document.getElementById('product-items-body');
+                    productItemsBody.innerHTML = '';
+                    productItems.forEach(item => {
+                        const row = `
+                            <tr>
+                                <td>${item.serialNumber}</td>
+                                <td>${item.status}</td>
+                                <td>
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateProductItemsModal" data-serialnumber="${item.serialNumber}">Update</button>
+                                </td>
+                            </tr>
+                        `;
+                        productItemsBody.innerHTML += row;
+                    });
+
+
+                    $('#product-items-table').DataTable({
+                        responsive: true,
+                        searching: true,
+                        paging: true,
+                        ordering: true,
+                        order: [],
+                        lengthChange: false,
+                        pageLength: 10,
+                        language: {
+                            search: "Search by Serial Number:"
+                        }
+                    });
+                };
+
+                await fetchProductItems();
+
+                $('#updateProductItemsModal').on('show.bs.modal', function (event) {
+                    const button = $(event.relatedTarget);
+                    const serialNumber = button.data('serialnumber');
+                    const modal = $(this);
+                    modal.find('.modal-title').text('Update Product Item Status');
+                    modal.find('#productItemSerialNumber').val(serialNumber);
+                });
+
+                document.getElementById('updateProductItemForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const serialNumber = document.getElementById('productItemSerialNumber').value;
+                    const status = document.getElementById('status').value;
+
+                    try {
+                        const response = await fetch(`http://localhost:5173/api/ProductItem/UpdateProductItemStatus`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify({ "serialNumber": serialNumber, "status": status })
+                        });
+
+                        if (!response.ok) throw new Error('Failed to update product item status');
+                        const data = await response.json();
+                        showToast('Product item status updated successfully', 'success');
+                        $('#updateProductItemsModal').modal('hide');
+                        await fetchProductItems();
+                    } catch (error) {
+                        showToast(error.message, 'error');
+                    }
+                });
+
+                document.getElementById('addSerialNumberField').addEventListener('click', () => {
+                    const container = document.getElementById('serialNumbersContainer');
+                    const inputCount = container.getElementsByClassName('serialNumber').length;
+                    const newInput = document.createElement('div');
+                    newInput.className = 'mb-3 input-group';
+                    newInput.innerHTML = `
+                        <input type="text" class="form-control serialNumber" id="serialNumber${inputCount + 1}" name="serialNumber${inputCount + 1}" required>
+                        <button type="button" class="btn btn-danger remove-serial-number">Remove</button>
+                    `;
+                    container.appendChild(newInput);
+                });
+
+                document.getElementById('serialNumbersContainer').addEventListener('click', (event) => {
+                    if (event.target.classList.contains('remove-serial-number')) {
+                        event.target.parentElement.remove();
+                    }
+                });
+
+                document.getElementById('addProductItemsForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const serialNumbers = Array.from(document.getElementsByClassName('serialNumber'))
+                        .map(input => input.value)
+                        .filter(value => value.trim() !== '')
+                        .map(serialNumber => ({ serialNumber, productId }));
+
+                    if (serialNumbers.length === 0) {
+                        showToast('Please add at least one serial number', 'error');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`http://localhost:5173/api/ProductItem/AddProductItems`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + localStorage.getItem('token')
+                            },
+                            body: JSON.stringify(serialNumbers)
+                        });
+
+                        if (!response.ok) throw new Error('Failed to add product items');
+                        const data = await response.json();
+                        showToast('Product items added successfully', 'success');
+                        $('#addProductItemsModal').modal('hide');
+                        await fetchProductItems();
+                    } catch (error) {
+                        showToast(error.message, 'error');
+                    }
+                });
+            } catch (error) {
+                showToast(error.message, 'error');
+            }
+        });
+    </script>
+
+
+</body>
+
+</html>

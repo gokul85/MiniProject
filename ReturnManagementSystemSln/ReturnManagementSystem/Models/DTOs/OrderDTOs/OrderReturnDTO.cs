@@ -8,5 +8,6 @@
         public decimal? TotalAmount { get; set; }
         public string? OrderStatus { get; set; }
         public List<OrderProduct> OrderProducts { get; set; } = new List<OrderProduct>();
+        public List<Transaction> Transactions { get; set; } = new List<Transaction>();
     }
 }

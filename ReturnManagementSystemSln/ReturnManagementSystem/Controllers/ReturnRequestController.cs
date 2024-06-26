@@ -182,6 +182,33 @@ namespace ReturnManagementSystem.Controllers
         }
 
         /// <summary>
+        /// Gets all active return requests Count
+        /// </summary>
+        /// <returns>return requests count.</returns>
+        [HttpGet("GetAllReturnRequestsCount")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
+        public async Task<ActionResult<int>> GetAllReturnRequestsCount()
+        {
+            try
+            {
+                var returnRequests = await _returnRequestService.GetAllReturnRequests();
+                return Ok(returnRequests.Count());
+            }
+            catch (ObjectsNotFoundException ex)
+            {
+                _logger.LogError(ex, "No return requests found");
+                return NotFound(new ErrorModel(404, ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while retrieving return requests");
+                return StatusCode(500, new ErrorModel(500, ex.Message));
+            }
+        }
+
+        /// <summary>
         /// Gets all return requests for a specific user.
         /// </summary>
         /// <param name="userId">The ID of the user.</param>
