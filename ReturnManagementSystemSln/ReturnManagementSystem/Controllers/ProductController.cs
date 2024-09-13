@@ -33,6 +33,7 @@ namespace ReturnManagementSystem.Controllers
         {
             try
             {
+                productDTO.Status = "Fresh";
                 var product = await _productService.AddProduct(productDTO);
                 return Ok(product);
             }

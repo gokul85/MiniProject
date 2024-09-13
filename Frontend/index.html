@@ -23,10 +23,16 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mx-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" href="#home">HOME</a>
+                        <a class="nav-link active" href="index.html#home">HOME</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="#product">PRODUCTS</a>
+                        <a class="nav-link" href="index.html#product">PRODUCTS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="my-orders.html">MY ORDER</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="return-requests.html">RETURN REQUESTS</a>
                     </li>
                 </ul>
 
@@ -34,8 +40,8 @@
                     <button class="btn p-2 my-lg-2 my-2">CART</button>
                 </a>
 
-                <a onclick="logout()">
-                    <button class="btn p-2 my-lg-2 my-2">LOGOUT</button>
+                <a id="auth-link" onclick="handleAuth()">
+                    <button class="btn p-2 my-lg-2 my-2" id="auth-button">LOGIN</button>
                 </a>
             </div>
         </div>
@@ -51,7 +57,7 @@
 
     <section id="product">
         <div class="container m-5">
-            <h1 class="text-center my-5">OUR PRODUCTS</h1>
+            <h1 class="text-center my-5 page-sub-title">OUR PRODUCTS</h1>
             <div class="row" id="products-area">
                 <!-- Products -->
             </div>
@@ -76,7 +82,45 @@
                     $(".modal-content").css("transform", "scaleX(1.4)");
                 }
             });
+
+            // Check if user is logged in and update the navbar accordingly
+            updateNavbar();
         });
+
+        function updateNavbar() {
+            const token = localStorage.getItem('token');
+            const authButton = document.getElementById('auth-button');
+            const authLink = document.getElementById('auth-link');
+            const myOrdersLink = document.getElementById('my-orders-link');
+
+            if (token) {
+                authButton.textContent = 'LOGOUT';
+                authLink.setAttribute('onclick', 'logout()');
+                myOrdersLink.style.display = 'block';
+            } else {
+                authButton.textContent = 'LOGIN';
+                authLink.setAttribute('onclick', 'login()');
+                myOrdersLink.style.display = 'none';
+            }
+        }
+
+        function handleAuth() {
+            const token = localStorage.getItem('token');
+            if (token) {
+                logout();
+            } else {
+                login();
+            }
+        }
+
+        function login() {
+            window.location.href = '/login.html';
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
 
         async function fetchProducts() {
             try {
@@ -110,29 +154,29 @@
                                     ${product.policies.map(policy => {
                     if (policy.policyType == "Replacement") {
                         return `<div class="policyitem">
-                                                                            <i class="fa-solid fa-arrow-right-arrow-left"></i>
-                                                                            <p>Replacement</p>
-                                                                            <p>${policy.duration} Days</p>
-                                                                        </div>`
+                                                <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                                                <p>Replacement</p>
+                                                <p>${policy.duration} Days</p>
+                                            </div>`
                     } else if (policy.policyType == "Return") {
                         return `<div class="policyitem">
-                                                            <i class="fa-solid fa-rotate-left"></i>
-                                                            <p>Return</p>
-                                                            <p>${policy.duration} Days</p>
-                                                        </div>`
+                                                <i class="fa-solid fa-rotate-left"></i>
+                                                <p>Return</p>
+                                                <p>${policy.duration} Days</p>
+                                            </div>`
                     } else if (policy.policyType == "Warranty") {
                         return `<div class="policyitem">
-                                                            <i class="fa-solid fa-shield"></i>
-                                                            <p>Warranty</p>
-                                                            <p>${policy.duration} Days</p>
-                                                        </div>`
+                                                <i class="fa-solid fa-shield"></i>
+                                                <p>Warranty</p>
+                                                <p>${policy.duration} Days</p>
+                                            </div>`
                     }
                 }).join('')}                                   
                                 </div>
                                 <a class="btn btn-primary card-link" id="addtocart" onclick="addToCart(${product.productId})">Add to cart</a>
-                            </div >
-                        </div >
-                    </div >
+                            </div>
+                        </div>
+                    </div>
                 `;
                 productsArea.append(productCard);
             });
@@ -174,9 +218,16 @@
             showToast('Product added to cart successfully!', 'success');
         }
 
-        function logout() {
-            localStorage.removeItem('token');
-            window.location.href = '/login.html';
+        function showToast(message, type) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.classList.add('toast', `toast-${type}`);
+            toast.innerText = message;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
         }
     </script>
 </body>

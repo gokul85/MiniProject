@@ -191,8 +191,8 @@
                     const requestId = $(this).data('requestid');
                     const serialNumber = $('#serialNumber').val();
                     try {
-                        const updateResponse = await fetch(`http://localhost:5173/api/ReturnRequest/UpdateSerialNumber`, {
-                            method: 'POST',
+                        const updateResponse = await fetch(`http://localhost:5173/api/ReturnRequest/UpdateUserSerialNumber`, {
+                            method: 'PUT',
                             headers: {
                                 'Content-Type': 'application/json',
                                 'Authorization': 'Bearer ' + localStorage.getItem('token')

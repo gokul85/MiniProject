@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order History</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="/assets/css/dashboard.css">
+    <style>
+        .card-body {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', async (event) => {
+            const token = localStorage.getItem('token');
+
+            if (!token) {
+                window.location.href = '/login.html';
+                return;
+            }
+            const roleres = await fetch("http://localhost:5173/api/User/VerifyRole", { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
+            const role = await roleres.text();
+            if (role !== 'User') {
+                window.location.href = '/admin/dashboard.html';
+            }
+        });
+    </script>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg" id="navbar">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><img src="./assets/images/cart.svg" width="50px" alt="Cart Image"></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarSupportedContent" aria-expanded="false">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link " href="index.html#home">HOME</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html#product">PRODUCTS</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#">MY ORDER</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="return-requests.html">RETURN REQUESTS</a>
+                    </li>
+                </ul>
+                <a href="/cart.html">
+                    <button class="btn p-2 my-lg-2 my-2">CART</button>
+                </a>
+                <a onclick="logout()">
+                    <button class="btn p-2 my-lg-2 my-2">LOGOUT</button>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <section id="order-history">
+        <div class="container m-5">
+            <h1 class="text-center my-5 page-sub-title">ORDER HISTORY</h1>
+            <div class="row" id="orders-area">
+                <!-- Orders will be populated here -->
+            </div>
+        </div>
+    </section>
+
+    <div id="toast-container"></div>
+
+    <div class="modal fade" id="returnRequestModal" tabindex="-1" aria-labelledby="returnRequestModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="returnRequestModalLabel">Return Request</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="returnRequestForm">
+                        <div class="mb-3">
+                            <label for="returnReason" class="form-label">Reason for Request</label>
+                            <textarea class="form-control" id="returnReason" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger">Submit Request</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="/assets/js/main.js"></script>
+    <script>
+        let currentPolicyId = null;
+        let currentOrderId = null;
+        let currentProductId = null;
+        let currentPolicy = null;
+
+        $(document).ready(function () {
+            fetchOrders();
+        });
+
+        async function fetchOrders() {
+            try {
+                const response = await fetch('http://localhost:5173/api/Order/GetAllUserOrders', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                const orders = await response.json();
+                console.log(orders);
+                for (const order of orders) {
+                    for (const orderProduct of order.orderProducts) {
+                        orderProduct.product = await fetchProductDetails(orderProduct.productId);
+                    }
+                }
+                populateOrders(orders);
+            } catch (error) {
+                console.error('Error fetching orders:', error);
+            }
+        }
+
+        async function fetchProductDetails(productId) {
+            try {
+                const response = await fetch(`http://localhost:5173/api/Product/GetProductById?id=${productId}`, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+                });
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching product details:', error);
+                return null;
+            }
+        }
+
+        function populateOrders(orders) {
+            const ordersArea = $('#orders-area');
+            ordersArea.empty();
+
+            // Sort orders by date in descending order
+            orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
+
+            orders.forEach(order => {
+                const orderCard = `
+            <div class="col-lg-4 col-md-6 col-sm-12">
+                <div class="card" style="width: 19rem;">
+                    <div class="card-body">
+                        <h5 class="card-title">Order #${order.orderId}</h5>
+                        <p class="card-text">Order Date: ${new Date(order.orderDate).toLocaleDateString()}</p>
+                        <p class="card-text">Total: ₹${order.totalAmount}</p>
+                        <div class="order-products">
+                            ${order.orderProducts.map(product => `
+                                <div class="order-product mt-2">
+                                    <h6>${product.product?.name || 'Unknown Product'}</h6>
+                                    <p>${product.product?.description || 'No description available'}</p>
+                                    <p>₹${product.price}</p>
+                                    <div class="policies">
+                                    ${product.product?.policies.map(policy => `
+                                            ${getPolicyHtml(policy, order.orderDate, order.orderId, product.productId)}
+                                    `).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+                ordersArea.append(orderCard);
+            });
+        }
+
+        function getPolicyHtml(policy, orderDate, orderId, productId) {
+            const currentDate = new Date();
+            const policyEndDate = new Date(orderDate);
+            policyEndDate.setDate(policyEndDate.getDate() + policy.duration);
+            if (currentDate <= policyEndDate) {
+                if (policy.policyType === "Replacement") {
+                    return `
+                <div class="policyitem">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                    <p>Replacement</p>
+                    <p>${policy.duration} Days</p>
+                    <button class="btn btn-warning" onclick="handlePolicy('${policy.policyType}', ${policy.policyId}, ${orderId}, ${productId})">Replace</button>
+                </div>
+            `;
+                } else if (policy.policyType === "Return") {
+                    return `
+                <div class="policyitem">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <p>Return</p>
+                    <p>${policy.duration} Days</p>
+                    <button class="btn btn-danger" onclick="handlePolicy('${policy.policyType}', ${policy.policyId}, ${orderId}, ${productId})">Return</button>
+                </div>
+            `;
+                } else if (policy.policyType === "Warranty") {
+                    return `
+                <div class="policyitem">
+                    <i class="fa-solid fa-shield"></i>
+                    <p>Warranty</p>
+                    <p>${policy.duration} Days</p>
+                    <button class="btn btn-info" onclick="handlePolicy('${policy.policyType}', ${policy.policyId}, ${orderId}, ${productId})">Claim Warranty</button>
+                </div>
+            `;
+                }
+            }
+            else {
+                {
+                    if (policy.policyType === "Replacement") {
+                        return `
+                <div class="policyitem">
+                    <i class="fa-solid fa-arrow-right-arrow-left"></i>
+                    <p>Replacement</p>
+                    <p>${policy.duration} Days</p>
+                    <p style="color:red;">expired</p>
+                </div>
+            `;
+                    } else if (policy.policyType === "Return") {
+                        return `
+                <div class="policyitem">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <p>Return</p>
+                    <p>${policy.duration} Days</p>
+                    <p style="color:red;">expired</p>
+                </div>
+            `;
+                    } else if (policy.policyType === "Warranty") {
+                        return `
+                <div class="policyitem">
+                    <i class="fa-solid fa-shield"></i>
+                    <p>Warranty</p>
+                    <p>${policy.duration} Days</p>
+                    <p style="color:red;">expired</p>
+                </div>
+            `;
+                    }
+                }
+            }
+        }
+
+        function handlePolicy(policyType, policyId, orderId, productId) {
+            currentPolicyId = policyId;
+            currentOrderId = orderId;
+            currentProductId = productId;
+            currentPolicy = policyType;
+
+            $("#returnRequestModalLabel").text(`${policyType} Request`);
+
+            $('#returnRequestModal').modal('show');
+        }
+
+        $('#returnRequestForm').submit(async function (e) {
+            e.preventDefault();
+            const reason = $('#returnReason').val();
+
+            const requestData = {
+                orderId: currentOrderId,
+                productId: currentProductId,
+                returnPolicy: currentPolicy,
+                reason: reason
+            };
+
+            try {
+                const response = await fetch('http://localhost:5173/api/ReturnRequest/OpenReturnRequest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('token')
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (response.ok) {
+                    showToast('Request submitted successfully!', 'success');
+                    currentPolicyId = null;
+                    currentOrderId = null;
+                    currentProductId = null;
+                    currentPolicy = null;
+                    $('#returnRequestModal').modal('hide');
+                } else {
+                    const data = await response.json();
+                    throw new Error(data.errorMessage);
+                }
+            } catch (err) {
+                currentPolicyId = null;
+                currentOrderId = null;
+                currentProductId = null;
+                currentPolicy = null;
+                $('#returnRequestModal').modal('hide');
+                showToast('Failed to submit request.' + err, 'error');
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/login.html';
+        }
+
+    </script>
+</body>
+
+</html>

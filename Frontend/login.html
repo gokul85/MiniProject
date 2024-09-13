@@ -9,6 +9,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', async (event) => {
             const token = localStorage.getItem('token');
+            if (!token) { return; }
             const roleres = await fetch("http://localhost:5173/api/User/VerifyRole", { headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') } });
             const role = await roleres.text();
             if (token != null || token != "") {
@@ -55,11 +56,15 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         async function login() {
+            const loginBtn = document.querySelector('.login-btn');
+            loginBtn.disabled = true; // Disable the button
+
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
 
             if (!username || !password) {
                 showToast('Please enter both username and password.', 'error');
+                loginBtn.disabled = false; // Re-enable the button
                 return;
             }
 
@@ -86,9 +91,21 @@
                 }
             } catch (error) {
                 showToast('Login failed: ' + error.message, 'error');
+                loginBtn.disabled = false; // Re-enable the button
             }
         }
 
+        document.getElementById('username').addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                login();
+            }
+        });
+
+        document.getElementById('password').addEventListener('keypress', function (event) {
+            if (event.key === 'Enter') {
+                login();
+            }
+        });
     </script>
 </body>
 

@@ -16,6 +16,8 @@ namespace ReturnManagementSystem.Models.DTOs.ProductDTOs
         [Range(0.01, double.MaxValue, ErrorMessage = "Price must be greater than 0.")]
         public decimal Price { get; set; }
 
+        public string Status { get; set; }
+
         public ICollection<PolicyDTO> Policies { get; set; }
 
         public ICollection<ProductItemDTO> ProductItems { get; set; }

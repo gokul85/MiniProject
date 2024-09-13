@@ -214,14 +214,15 @@ namespace ReturnManagementSystem.Controllers
         /// <param name="userId">The ID of the user.</param>
         /// <returns>A list of return requests for the user.</returns>
         [HttpGet("GetAllUserReturnRequests")]
-        [Authorize(Roles = "User,Admin")]
+        [Authorize(Roles = "User")]
         [ProducesResponseType(typeof(IEnumerable<ReturnRequest>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ErrorModel), StatusCodes.Status404NotFound)]
-        public async Task<ActionResult<IEnumerable<ReturnRequest>>> GetAllUserReturnRequests(int userId)
+        public async Task<ActionResult<IEnumerable<ReturnRequest>>> GetAllUserReturnRequests()
         {
             try
             {
-                var returnRequests = await _returnRequestService.GetAllUserReturnRequests(userId);
+                int userid = int.Parse(User.FindFirstValue("uid"));
+                var returnRequests = await _returnRequestService.GetAllUserReturnRequests(userid);
                 return Ok(returnRequests);
             }
             catch (ObjectsNotFoundException ex)

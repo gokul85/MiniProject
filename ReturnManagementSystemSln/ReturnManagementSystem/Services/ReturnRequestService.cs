@@ -199,7 +199,9 @@ namespace ReturnManagementSystem.Services
                 Name = oldproduct.Name,
                 Description = oldproduct.Description,
                 Price = (decimal)oldproduct.Price * 0.75m,
+                Status = "Refurbished",
                 Policies = oldproduct.Policies.Select(ConvertToPolicyDTO).ToList(),
+                ProductItems = new List<ProductItemDTO>()
             };
             var newproduct = await _productService.AddProduct(newrefurbishedprod);
 
@@ -254,7 +256,7 @@ namespace ReturnManagementSystem.Services
 
         public async Task<ReturnRequest> UpdateUserSerialNumber(UpdateRequestSerialNumberDTO ursnDTO)
         {
-            var returnRequest = await _returnRequestRepository.Get(ursnDTO.RquestId);
+            var returnRequest = await _returnRequestRepository.Get(ursnDTO.RequestId);
             if (returnRequest == null)
             {
                 throw new ObjectNotFoundException("Return request not found");

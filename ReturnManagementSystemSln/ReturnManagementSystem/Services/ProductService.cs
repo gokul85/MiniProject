@@ -19,8 +19,8 @@ namespace ReturnManagementSystem.Services
         }
         public async Task<ProductReturnDTO> AddProduct(ProductDTO productDTO)
         {
-            var prodcheck = await _productRepository.FindAll(p=>p.Name == productDTO.Name);
-            if (prodcheck.Any())
+            var prodcheck = await _productRepository.FindAll(p=>p.Name == productDTO.Name && p.ProductStatus == productDTO.Status);
+            if (prodcheck != null)
             {
                 throw new InvalidDataException("Product Already Found Exception");
             }
@@ -30,7 +30,7 @@ namespace ReturnManagementSystem.Services
                 Description = productDTO.Description,
                 Price = productDTO.Price,
                 Stock = 0,
-                ProductStatus = "Fresh",
+                ProductStatus = productDTO.Status,
             };
             var aproduct = await _productRepository.Add(product);
             foreach (var p in productDTO.Policies)
